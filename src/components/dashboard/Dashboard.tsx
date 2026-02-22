@@ -14,10 +14,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
   BarChart3,
   Activity,
   Target,
@@ -57,27 +57,27 @@ export function Dashboard() {
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
   // Fetch real portfolio data
-  const { 
-    portfolio, 
-    loading: portfolioLoading, 
+  const {
+    portfolio,
+    loading: portfolioLoading,
     error: portfolioError,
     refresh: refreshPortfolio,
     getTotalPnL,
     getPnLPercentage,
     getActivePositions
-  } = usePortfolio({ 
+  } = usePortfolio({
     includeHistory: true,
     historyLimit: 10,
-    autoRefresh: true 
+    autoRefresh: true
   });
 
   // Fetch real markets data
-  const { 
-    markets, 
+  const {
+    markets,
     loading: marketsLoading,
     error: marketsError,
     refetch: refreshMarkets
-  } = useMarkets({ 
+  } = useMarkets({
     featured: true,
     limit: 8
   });
@@ -94,7 +94,7 @@ export function Dashboard() {
   const totalPnL = getTotalPnL();
   const pnlPercentage = getPnLPercentage();
   const activePositions = getActivePositions();
-  
+
   // Get daily changes for today's P&L
   const currentTotalValue = portfolio?.summary?.totalValue || (portfolio?.balance?.available_balance || 0);
   const { dailyChange } = useDailyChanges(currentTotalValue);
@@ -113,17 +113,17 @@ export function Dashboard() {
     {
       title: "Today's P&L",
       value: portfolioLoading ? "Loading..." : (
-        dailyChange ? 
+        dailyChange ?
           ((dailyChange.absoluteChange >= 0) ? `+₹${Math.abs(dailyChange.absoluteChange).toLocaleString()}` : `-₹${Math.abs(dailyChange.absoluteChange).toLocaleString()}`) :
           "No data"
       ),
       change: portfolioLoading ? "Loading..." : (
-        dailyChange ? 
+        dailyChange ?
           ((dailyChange.percentChange >= 0) ? `+${dailyChange.percentChange.toFixed(2)}%` : `${dailyChange.percentChange.toFixed(2)}%`) :
           "First day"
       ),
       trend: portfolioLoading ? "neutral" : (
-        dailyChange ? 
+        dailyChange ?
           (dailyChange.absoluteChange >= 0 ? "up" : "down") :
           "neutral"
       ),
@@ -158,7 +158,7 @@ export function Dashboard() {
     const totalShares = (position.yesShares || 0) + (position.noShares || 0);
     const isYesPosition = (position.yesShares || 0) > (position.noShares || 0);
     const avgPrice = (position.totalInvested || 0) > 0 && totalShares > 0 ? (position.totalInvested || 0) / totalShares : 0;
-    
+
     return {
       title: position.marketTitle || 'Unknown Market',
       category: position.marketCategory?.charAt(0).toUpperCase() + position.marketCategory?.slice(1) || 'Other',
@@ -193,7 +193,7 @@ export function Dashboard() {
     if (mounted) {
       setLastUpdate(new Date());
     }
-    
+
     try {
       await Promise.all([
         refreshPortfolio(),
@@ -289,10 +289,9 @@ export function Dashboard() {
         {stat.loading ? (
           <div className="h-5 bg-gray-200 rounded w-16"></div>
         ) : (
-          <div className={`text-xs px-2 py-0.5 rounded ${
-            stat.trend === 'up' ? 'text-green-700 bg-green-50' : 
-            stat.trend === 'down' ? 'text-red-700 bg-red-50' : 'text-gray-700 bg-gray-50'
-          }`}>
+          <div className={`text-xs px-2 py-0.5 rounded ${stat.trend === 'up' ? 'text-green-700 bg-green-50' :
+              stat.trend === 'down' ? 'text-red-700 bg-red-50' : 'text-gray-700 bg-gray-50'
+            }`}>
             {stat.change}
           </div>
         )}
@@ -321,29 +320,22 @@ export function Dashboard() {
 
   if (hasError) {
     return (
-      <div className="p-6 bg-white min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <Card className="p-6 border-red-200 bg-red-50">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-              <div>
-                <h3 className="text-sm font-medium text-red-800">Error loading dashboard</h3>
-                <p className="text-sm text-red-600 mt-1">
-                  {portfolioError || marketsError}
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefreshAll}
-                className="ml-auto"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Retry
-              </Button>
-            </div>
-          </Card>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-white text-center p-8">
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
+          <AlertCircle className="h-8 w-8 text-red-500" />
         </div>
+        <h3 className="text-xl font-light text-gray-900 mb-2">Something went wrong</h3>
+        <p className="text-gray-500 max-w-md mx-auto mb-8 font-light">
+          {portfolioError || marketsError}
+        </p>
+        <Button
+          onClick={handleRefreshAll}
+          variant="outline"
+          className="rounded-full px-8 py-6 border-gray-200 hover:bg-gray-50 font-light tracking-wide transition-all"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Try Again
+        </Button>
       </div>
     );
   }
@@ -401,27 +393,27 @@ export function Dashboard() {
             <p className="text-gray-500 text-lg font-light">
               {user?.email?.split('@')[0] || 'Trader'}
               {mounted && lastUpdate && (
-                <> • Last updated: {lastUpdate.toLocaleTimeString('en-US', { 
-                  hour: '2-digit', 
-                  minute: '2-digit', 
-                  second: '2-digit', 
-                  hour12: true 
+                <> • Last updated: {lastUpdate.toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: true
                 })}</>
               )}
             </p>
           </div>
           <Button
-              onClick={handleRefreshAll}
-              size="sm"
-              variant="outline"
-              className="hover:border-gray-200 shadow bg-white/70 backdrop-blur-md rounded-full px-6 py-3 min-w-[183px] min-h-[50px] flex items-center justify-center"
-            >
-              {isRefreshing ? (
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="h-5 w-5 mr-2" />
-              )}
-              {isRefreshing ? "Loading..." : "Refresh"}
+            onClick={handleRefreshAll}
+            size="sm"
+            variant="outline"
+            className="hover:border-gray-200 shadow bg-white/70 backdrop-blur-md rounded-full px-6 py-3 min-w-[183px] min-h-[50px] flex items-center justify-center"
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-5 w-5 mr-2" />
+            )}
+            {isRefreshing ? "Loading..." : "Refresh"}
           </Button>
         </div>
 
@@ -435,10 +427,9 @@ export function Dashboard() {
               <div>
                 <div className="text-xs text-gray-400 font-light uppercase tracking-wider mb-1">{stat.title}</div>
                 <div className="text-3xl font-extrabold text-gray-900">{stat.value}</div>
-                <div className={`text-xs px-2 py-0.5 rounded mt-1 ${
-                  stat.trend === 'up' ? 'text-green-700 bg-green-50' : 
-                  stat.trend === 'down' ? 'text-red-700 bg-red-50' : 'text-gray-700 bg-gray-50'
-                }`}>
+                <div className={`text-xs px-2 py-0.5 rounded mt-1 ${stat.trend === 'up' ? 'text-green-700 bg-green-50' :
+                    stat.trend === 'down' ? 'text-red-700 bg-red-50' : 'text-gray-700 bg-gray-50'
+                  }`}>
                   {stat.change}
                 </div>
               </div>
@@ -530,9 +521,8 @@ export function Dashboard() {
                               <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">Vol: {market.volume}</span>
                             </div>
                           </div>
-                          <div className={`flex items-center gap-1 text-xs font-bold ${
-                            market.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                          }`}>
+                          <div className={`flex items-center gap-1 text-xs font-bold ${market.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                            }`}>
                             {market.trend === 'up' ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                             {market.change}
                           </div>

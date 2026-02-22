@@ -33,14 +33,14 @@ export default function Home() {
 
     if (user && needsOnboarding) {
       ClientRedirectManager.redirect(
-        router, 
-        '/onboarding', 
+        router,
+        '/onboarding',
         'User authenticated but needs onboarding'
       );
     } else if (user && !needsOnboarding) {
       ClientRedirectManager.redirect(
-        router, 
-        '/dashboard', 
+        router,
+        '/dashboard',
         'User authenticated and onboarding complete'
       );
     }
@@ -50,11 +50,14 @@ export default function Home() {
   // Show loading state
   if (loading) {
     return (
-      <main className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <main className="min-h-screen bg-white flex flex-col items-center justify-center">
+        <div className="relative flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full border-2 border-gray-100 border-t-black animate-spin"></div>
+          <div className="absolute w-2 h-2 bg-black rounded-full animate-pulse"></div>
         </div>
+        <p className="mt-4 text-[10px] font-medium uppercase tracking-[0.3em] text-gray-400 animate-pulse">
+          Authenticating
+        </p>
       </main>
     );
   }
@@ -64,7 +67,7 @@ export default function Home() {
     <main className="min-h-screen bg-white relative">
       {/* Navbar */}
       <ResizableNavbar onOpenAuth={openAuthModal} />
-      
+
       {/* Landing Page Content */}
       <LandingPage onOpenAuth={openAuthModal} />
 
