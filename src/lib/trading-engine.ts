@@ -180,7 +180,7 @@ export class TradingEngine {
   ): Promise<{ orders: any[]; error?: string }> {
     try {
       const oppositeSide = side === 'YES' ? 'NO' : 'YES';
-      
+
       // For YES/NO markets, complementary pricing:
       // If someone wants to buy YES at 60, they match with NO orders at 40
       // If someone wants to buy NO at 30, they match with YES orders at 70
@@ -212,10 +212,10 @@ export class TradingEngine {
         // For NO orders, prefer lower-priced YES orders (better for the NO buyer)
         query = query.order('price', { ascending: true });
       }
-      
+
       // Then by time priority (FIFO)
       query = query.order('created_at', { ascending: true });
-      
+
       // Limit to prevent excessive locking
       query = query.limit(50);
 
@@ -228,13 +228,13 @@ export class TradingEngine {
       // Filter orders to ensure we don't exceed maxQuantity
       let cumulativeQuantity = 0;
       const filteredOrders = [];
-      
+
       for (const order of matchingOrders || []) {
         if (cumulativeQuantity >= maxQuantity) break;
-        
+
         const orderQuantity = order.remaining_quantity || order.quantity;
         const quantityToTake = Math.min(orderQuantity, maxQuantity - cumulativeQuantity);
-        
+
         if (quantityToTake > 0) {
           filteredOrders.push({
             ...order,
@@ -247,9 +247,9 @@ export class TradingEngine {
       return { orders: filteredOrders, error: undefined };
 
     } catch (error) {
-      return { 
-        orders: [], 
-        error: `Failed to find matching orders: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      return {
+        orders: [],
+        error: `Failed to find matching orders: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }
@@ -289,10 +289,10 @@ export class TradingEngine {
 
         // Calculate match quantity considering available quantity
         const matchQuantity = Math.min(
-          remainingQuantity, 
+          remainingQuantity,
           matchingOrder.available_quantity || matchingOrder.remaining_quantity || matchingOrder.quantity
         );
-        
+
         if (matchQuantity <= 0) continue;
 
         // Create trade execution with proper buyer/seller assignment
@@ -309,7 +309,7 @@ export class TradingEngine {
 
         // Execute the trade atomically
         const tradeResult = await this.executeTradeTransaction(this.supabase, trade);
-        
+
         if (tradeResult.success) {
           trades.push({
             tradeId: tradeResult.tradeId,
@@ -402,13 +402,17 @@ export class TradingEngine {
       });
 
       // If RPC succeeds, return the result
-      if (!result.error) {
+      if (!result.error && result.data) {
+        if (result.data.success === false) {
+          return { success: false, error: result.data.error || 'Failed to place order via RPC' };
+        }
+
         return {
           success: true,
-          orderId: result.data?.order_id,
-          trades: result.data?.trades || [],
-          filledQuantity: result.data?.filled_quantity || 0,
-          remainingQuantity: result.data?.remaining_quantity || quantity
+          orderId: result.data.order_id,
+          trades: result.data.trades || [],
+          filledQuantity: result.data.filled_quantity || 0,
+          remainingQuantity: result.data.remaining_quantity || quantity
         };
       }
 
@@ -461,7 +465,7 @@ export class TradingEngine {
           if (createError) {
             return { success: false, error: 'Failed to create user balance' };
           }
-          
+
           userBalance = newBalance;
         } else {
           return { success: false, error: 'Failed to access user balance' };
@@ -486,15 +490,13 @@ export class TradingEngine {
           price: price,
           status: 'open',
           order_type: 'limit',
-          filled_quantity: 0,
-          remaining_quantity: quantity,
-          total_cost: orderCost
+          filled_quantity: 0
         })
         .select()
         .single();
 
       if (orderError) {
-        return { success: false, error: 'Failed to create order' };
+        return { success: false, error: `Failed to create order: ${orderError.message}` };
       }
 
       // 3. Update balance atomically
@@ -513,13 +515,13 @@ export class TradingEngine {
           .from('orders')
           .delete()
           .eq('id', newOrder.id);
-        
+
         return { success: false, error: 'Failed to lock funds - balance may have changed' };
       }
 
       // 4. Attempt immediate matching with proper atomic transaction
       const matchingResult = await this.attemptOrderMatching(newOrder, marketId);
-      
+
       return {
         success: true,
         orderId: newOrder.id,
@@ -590,4 +592,3 @@ export class TradingEngine {
 }
 
 // Export singleton instance
- 

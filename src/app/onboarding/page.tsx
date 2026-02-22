@@ -168,26 +168,8 @@ export default function OnboardingPage() {
         throw error;
       }
 
-      // Create user balance record if it doesn't exist
-      const balanceInsert = {
-        user_id: user.id,
-        available_balance: 10,
-        locked_balance: 0,
-        total_deposited: 0,
-        total_withdrawn: 0,
-        total_trades: 0,
-        total_volume: 0,
-        total_profit_loss: 0,
-        winning_trades: 0,
-      };
-
-      const { error: balanceError } = await supabase
-        .from('user_balances')
-        .upsert([balanceInsert as any]);
-
-      if (balanceError) {
-        console.error('Error creating user balance:', balanceError);
-      }
+      // Note: User balance is now automatically created by a database trigger 
+      // when the user is created (with 10,000 initial balance).
 
       await checkOnboardingStatus();
       ClientRedirectManager.redirect(
@@ -321,8 +303,8 @@ export default function OnboardingPage() {
                 <div key={step.id} className="flex items-center flex-1 last:flex-none">
                   <div className="relative flex flex-col items-center">
                     <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${step.id <= currentStep
-                        ? 'bg-black border-black text-white shadow-md'
-                        : 'bg-white border-gray-200 text-gray-400'
+                      ? 'bg-black border-black text-white shadow-md'
+                      : 'bg-white border-gray-200 text-gray-400'
                       }`}>
                       {step.id < currentStep ? (
                         <CheckCircle className="h-5 w-5" />
