@@ -73,6 +73,14 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
                 {user ? 'Go to Dashboard' : 'Start Trading'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
+              <Button
+                onClick={() => window.open('https://github.com/codebanditssss/Augur', '_blank')}
+                variant="outline"
+                size="lg"
+                className="border-gray-200 hover:bg-gray-50 text-gray-900 px-8 py-4 text-lg font-medium rounded-xl shadow-sm hover:shadow-md transition-all duration-300"
+              >
+                GitHub
+              </Button>
             </div>
 
             {/* Interactive Demo Components */}

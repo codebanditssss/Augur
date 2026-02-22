@@ -54,7 +54,9 @@ export function Footers() {
           <div className="flex gap-5">
             <a href="#" className="relative transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-black after:transition-all after:duration-300 hover:after:w-full">Privacy Policy</a>
             <a href="#" className="relative transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-black after:transition-all after:duration-300 hover:after:w-full">Terms</a>
-            <a href="#" className="relative transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-black after:transition-all after:duration-300 hover:after:w-full">Contact</a>
+            <a href="https://github.com/codebanditssss/Augur" target="_blank" rel="noopener noreferrer" className="relative transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-black after:transition-all after:duration-300 hover:after:w-full flex items-center gap-1">
+              GitHub
+            </a>
           </div>
         </div>
       </footer>
