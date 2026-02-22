@@ -10,15 +10,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
-  User, 
-  MapPin, 
-  Globe, 
-  Twitter, 
-  CheckCircle, 
+import {
+  User,
+  MapPin,
+  Globe,
+  Twitter,
+  CheckCircle,
   Loader2,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  BarChart3
 } from 'lucide-react';
 
 interface OnboardingData {
@@ -45,15 +46,15 @@ export default function OnboardingPage() {
     twitter_handle: ''
   });
 
-useEffect(() => {
-  if (!user) {
-    ClientRedirectManager.redirect(
-      router, 
-      '/', 
-      'No user found, redirecting to home'
-    );
-  }
-}, [user, router]);
+  useEffect(() => {
+    if (!user) {
+      ClientRedirectManager.redirect(
+        router,
+        '/',
+        'No user found, redirecting to home'
+      );
+    }
+  }, [user, router]);
 
   const steps = [
     {
@@ -190,8 +191,8 @@ useEffect(() => {
 
       await checkOnboardingStatus();
       ClientRedirectManager.redirect(
-        router, 
-        '/dashboard', 
+        router,
+        '/dashboard',
         'Onboarding completed successfully'
       );
     } catch (err) {
@@ -295,36 +296,46 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl bg-white border-0 shadow-lg">
-        <div className="p-8">
-          <div className="max-w-md w-full space-y-8">
-            <div>
-              <img src="/logo.svg" alt="Augur" className="h-12 mx-auto mb-8" />
-              <h2 className="mt-6 text-center text-3xl font-light text-gray-900">
+        <div className="p-4 sm:p-8">
+          <div className="max-w-md w-full mx-auto space-y-8">
+            <div className="text-center">
+              <div className="flex justify-center mb-8">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-16 h-16 text-black"
+                  fill="currentColor"
+                >
+                  <path d="M12 2L9.5 7L15 9L12 14L18.5 16L15 22L21 19.5L19.5 15L16 13L18.5 9L15.5 7.5L17 4L12 2Z" />
+                </svg>
+              </div>
+              <h2 className="text-4xl font-light text-gray-900 tracking-tight">
                 Welcome to Augur
               </h2>
-              <p className="mt-2 text-center text-sm text-gray-600">
+              <p className="mt-3 text-sm text-gray-500 font-medium uppercase tracking-wider">
                 Complete your profile to start trading
               </p>
             </div>
 
-            <div className="flex items-center justify-between mb-8">
+            <div className="relative flex items-center justify-between mb-12 w-full px-2">
               {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                    step.id <= currentStep 
-                      ? 'bg-blue-600 border-blue-600 text-white' 
-                      : 'border-gray-300 text-gray-500'
-                  }`}>
-                    {step.id < currentStep ? (
-                      <CheckCircle className="h-4 w-4" />
-                    ) : (
-                      <span className="text-sm font-medium">{step.id}</span>
-                    )}
+                <div key={step.id} className="flex items-center flex-1 last:flex-none">
+                  <div className="relative flex flex-col items-center">
+                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${step.id <= currentStep
+                        ? 'bg-black border-black text-white shadow-md'
+                        : 'bg-white border-gray-200 text-gray-400'
+                      }`}>
+                      {step.id < currentStep ? (
+                        <CheckCircle className="h-5 w-5" />
+                      ) : (
+                        <span className="text-sm font-semibold">{step.id}</span>
+                      )}
+                    </div>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`w-16 h-0.5 mx-2 ${
-                      step.id < currentStep ? 'bg-blue-600' : 'bg-gray-300'
-                    }`} />
+                    <div className="flex-1 mx-4">
+                      <div className={`h-0.5 rounded-full transition-all duration-500 ${step.id < currentStep ? 'bg-black' : 'bg-gray-200'
+                        }`} />
+                    </div>
                   )}
                 </div>
               ))}
@@ -338,7 +349,7 @@ useEffect(() => {
             </div>
 
             <div className="space-y-6 mb-8">
-              {currentStepData?.fields.map(field => 
+              {currentStepData?.fields.map(field =>
                 renderField(field as keyof OnboardingData)
               )}
             </div>
