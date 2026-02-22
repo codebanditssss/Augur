@@ -4,7 +4,7 @@ import { RedirectManager } from '@/lib/redirect-manager'
 /**
  * Middleware with comprehensive redirect management and loop prevention
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Skip API routes completely to avoid interference
   if (request.nextUrl.pathname.startsWith('/api')) {
     return NextResponse.next()
@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
     console.error('Middleware error:', error)
     // Fallback to allowing the request through on error
     return NextResponse.next()
-      }
+  }
 }
 
 export const config = {
@@ -30,5 +30,5 @@ export const config = {
      */
     '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
-} 
+}
 
