@@ -93,7 +93,7 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
     if (!session?.access_token) {
       throw new Error('No authentication token available');
     }
-    
+
     return {
       'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json'
@@ -112,7 +112,7 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
 
       const headers = await getAuthHeaders();
       const params = new URLSearchParams();
-      
+
       params.append('limit', limit.toString());
       params.append('offset', offset.toString());
       if (status !== 'all') params.append('status', status);
@@ -127,7 +127,7 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
         method: 'GET',
         headers
       });
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           throw new Error('Authentication failed. Please sign in again.');
@@ -137,7 +137,7 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
       }
 
       const result: TradeHistoryData = await response.json();
-      
+
       // Transform trades to match component expectations
       const transformedTrades = result.trades.map(trade => ({
         ...trade,
@@ -187,7 +187,7 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
       const nextOffset = data.pagination.offset + data.pagination.limit;
       const headers = await getAuthHeaders();
       const params = new URLSearchParams();
-      
+
       params.append('limit', limit.toString());
       params.append('offset', nextOffset.toString());
       if (status !== 'all') params.append('status', status);
@@ -202,7 +202,7 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
         method: 'GET',
         headers
       });
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           throw new Error('Authentication failed. Please sign in again.');
@@ -211,7 +211,7 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
       }
 
       const newData: TradeHistoryData = await response.json();
-      
+
       // Transform and append new trades
       const transformedNewTrades = newData.trades.map(trade => ({
         ...trade,
@@ -249,7 +249,11 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
   // Auto-refresh setup
   useEffect(() => {
     if (autoRefresh && refreshInterval > 0) {
-      const interval = setInterval(refresh, refreshInterval);
+      const interval = setInterval(() => {
+        if (typeof document !== 'undefined' && !document.hidden) {
+          refresh();
+        }
+      }, refreshInterval);
       return () => clearInterval(interval);
     }
   }, [autoRefresh, refreshInterval, refresh]);
@@ -302,20 +306,20 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
       offset,
       hasMore: false
     },
-    
+
     // State
     loading,
     error,
-    
+
     // Actions
     refresh,
     loadMore,
-    
+
     // Helper functions
     getTradeById,
     getTradesByMarket,
     getTradesByStatus,
-    
+
     // Computed values
     hasData: (data?.trades?.length || 0) > 0,
     totalTrades: data?.trades?.length || 0,

@@ -110,7 +110,11 @@ export function useOrderbook(marketId?: string, options: UseOrderbookOptions = {
       fetchOrderbook();
 
       // Set up interval
-      const interval = setInterval(fetchOrderbook, refreshInterval);
+      const interval = setInterval(() => {
+        if (typeof document !== 'undefined' && !document.hidden) {
+          fetchOrderbook();
+        }
+      }, refreshInterval);
       return () => clearInterval(interval);
     }
   }, [autoRefresh, marketId, refreshInterval, fetchOrderbook]);

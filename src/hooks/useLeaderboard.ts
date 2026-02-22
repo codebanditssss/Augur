@@ -92,7 +92,7 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
     if (!session?.access_token) {
       throw new Error('No authentication token available');
     }
-    
+
     return {
       'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json'
@@ -112,7 +112,7 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
 
       const headers = await getAuthHeaders();
       const params = new URLSearchParams();
-      
+
       params.append('limit', limit.toString());
       params.append('offset', offset.toString());
       if (timeRange !== 'all') params.append('timeRange', timeRange);
@@ -123,7 +123,7 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
         method: 'GET',
         headers
       });
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           throw new Error('Authentication failed. Please sign in again.');
@@ -157,7 +157,7 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
       const nextOffset = data.pagination.offset + data.pagination.limit;
       const headers = await getAuthHeaders();
       const params = new URLSearchParams();
-      
+
       params.append('limit', limit.toString());
       params.append('offset', nextOffset.toString());
       if (timeRange !== 'all') params.append('timeRange', timeRange);
@@ -168,7 +168,7 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
         method: 'GET',
         headers
       });
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           throw new Error('Authentication failed. Please sign in again.');
@@ -177,7 +177,7 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
       }
 
       const newData: LeaderboardData = await response.json();
-      
+
       // Append new entries
       setData(prevData => ({
         ...newData,
@@ -194,7 +194,11 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
   // Auto-refresh setup
   useEffect(() => {
     if (autoRefresh && refreshInterval > 0) {
-      const interval = setInterval(refresh, refreshInterval);
+      const interval = setInterval(() => {
+        if (typeof document !== 'undefined' && !document.hidden) {
+          refresh();
+        }
+      }, refreshInterval);
       return () => clearInterval(interval);
     }
   }, [autoRefresh, refreshInterval, refresh]);
@@ -254,21 +258,21 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
       sortBy,
       search
     },
-    
+
     // State
     loading,
     error,
-    
+
     // Actions
     refresh,
     loadMore,
-    
+
     // Helper functions
     getUserRank,
     getTopPerformers,
     getCurrentUserEntry,
     getEntryById,
-    
+
     // Computed values
     hasData: (data?.leaderboard?.length || 0) > 0,
     totalEntries: data?.leaderboard?.length || 0,

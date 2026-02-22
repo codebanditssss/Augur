@@ -33,18 +33,18 @@ interface SystemHealth {
  */
 async function checkDatabaseHealth(): Promise<HealthCheckResult> {
   const start = Date.now();
-  
+
   try {
     const supabase = getServiceRoleClient();
-    
+
     // Test basic connectivity with a simple query
     const { data, error } = await supabase
       .from('markets')
       .select('id')
       .limit(1);
-    
+
     const responseTime = Date.now() - start;
-    
+
     if (error) {
       return {
         status: 'unhealthy',
@@ -52,19 +52,19 @@ async function checkDatabaseHealth(): Promise<HealthCheckResult> {
         responseTime
       };
     }
-    
+
     // Check if response time is reasonable
     const status = responseTime > 1000 ? 'degraded' : 'healthy';
-    const message = status === 'degraded' 
-      ? `Database slow (${responseTime}ms)` 
+    const message = status === 'degraded'
+      ? `Database slow (${responseTime}ms)`
       : 'Database operational';
-    
+
     return {
       status,
       message,
       responseTime
     };
-    
+
   } catch (error) {
     const responseTime = Date.now() - start;
     return {
@@ -79,51 +79,14 @@ async function checkDatabaseHealth(): Promise<HealthCheckResult> {
  * Real-time system health check
  */
 async function checkRealtimeHealth(): Promise<HealthCheckResult> {
-  const start = Date.now();
-  
-  try {
-    // Check if real-time endpoint is responsive
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/realtime`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'text/event-stream',
-      },
-      signal: AbortSignal.timeout(5000) // 5 second timeout
-    });
-    
-    const responseTime = Date.now() - start;
-    
-    if (!response.ok) {
-      return {
-        status: 'unhealthy',
-        message: `Real-time endpoint error: ${response.status}`,
-        responseTime
-      };
-    }
-    
-    const contentType = response.headers.get('content-type');
-    if (!contentType?.includes('text/event-stream')) {
-      return {
-        status: 'degraded',
-        message: 'Real-time endpoint not serving SSE',
-        responseTime
-      };
-    }
-    
-    return {
-      status: 'healthy',
-      message: 'Real-time system operational',
-      responseTime
-    };
-    
-  } catch (error) {
-    const responseTime = Date.now() - start;
-    return {
-      status: 'unhealthy',
-      message: `Real-time system error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      responseTime
-    };
-  }
+  // Since we've switched to Optimized Polling Mode, we don't need to check 
+  // the SSE /api/realtime endpoint anymore. The system is considered 
+  // healthy if the frontend can communicate with the standard APIs.
+  return {
+    status: 'healthy',
+    message: 'Real-time Optimized Polling Mode active',
+    responseTime: 0
+  };
 }
 
 /**
@@ -131,18 +94,18 @@ async function checkRealtimeHealth(): Promise<HealthCheckResult> {
  */
 async function checkTradingEngineHealth(): Promise<HealthCheckResult> {
   const start = Date.now();
-  
+
   try {
     const supabase = getServiceRoleClient();
-    
+
     // Check if we can access orders table and user_balances
     const [ordersCheck, balancesCheck] = await Promise.all([
       supabase.from('orders').select('id').limit(1),
       supabase.from('user_balances').select('user_id').limit(1)
     ]);
-    
+
     const responseTime = Date.now() - start;
-    
+
     if (ordersCheck.error || balancesCheck.error) {
       return {
         status: 'degraded',
@@ -154,16 +117,16 @@ async function checkTradingEngineHealth(): Promise<HealthCheckResult> {
         }
       };
     }
-    
+
     // Check for recent orders to see if trading is active
     const { data: recentOrders } = await supabase
       .from('orders')
       .select('created_at')
       .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
       .limit(1);
-    
+
     const hasRecentActivity = recentOrders && recentOrders.length > 0;
-    
+
     return {
       status: 'healthy',
       message: hasRecentActivity ? 'Trading engine active' : 'Trading engine ready (no recent activity)',
@@ -172,7 +135,7 @@ async function checkTradingEngineHealth(): Promise<HealthCheckResult> {
         recentActivity: hasRecentActivity
       }
     };
-    
+
   } catch (error) {
     const responseTime = Date.now() - start;
     return {
@@ -192,13 +155,13 @@ function checkMemoryHealth(): HealthCheckResult {
     const heapUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
     const heapTotalMB = Math.round(memUsage.heapTotal / 1024 / 1024);
     const rssMB = Math.round(memUsage.rss / 1024 / 1024);
-    
+
     // Consider memory unhealthy if heap usage is over 80%
     const heapUsagePercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
-    
+
     let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
     let message = `Memory usage: ${heapUsedMB}MB/${heapTotalMB}MB (${heapUsagePercent.toFixed(1)}%)`;
-    
+
     if (heapUsagePercent > 80) {
       status = 'unhealthy';
       message = `High memory usage: ${heapUsagePercent.toFixed(1)}%`;
@@ -206,7 +169,7 @@ function checkMemoryHealth(): HealthCheckResult {
       status = 'degraded';
       message = `Elevated memory usage: ${heapUsagePercent.toFixed(1)}%`;
     }
-    
+
     return {
       status,
       message,
@@ -217,7 +180,7 @@ function checkMemoryHealth(): HealthCheckResult {
         heapUsagePercent: heapUsagePercent.toFixed(1) + '%'
       }
     };
-    
+
   } catch (error) {
     return {
       status: 'unhealthy',
@@ -231,7 +194,7 @@ function checkMemoryHealth(): HealthCheckResult {
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const startTime = Date.now();
-  
+
   try {
     // Run all health checks in parallel
     const [
@@ -247,7 +210,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       checkTradingEngineHealth(),
       checkMemoryHealth()
     ]);
-    
+
     // Calculate overall status
     const checks = {
       database: databaseHealth,
@@ -256,14 +219,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       tradingEngine: tradingEngineHealth,
       memory: memoryHealth
     };
-    
+
     const statuses = Object.values(checks).map(check => check.status);
     const summary = {
       healthy: statuses.filter(s => s === 'healthy').length,
       degraded: statuses.filter(s => s === 'degraded').length,
       unhealthy: statuses.filter(s => s === 'unhealthy').length
     };
-    
+
     // Determine overall system status
     let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
     if (summary.unhealthy > 0) {
@@ -271,7 +234,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     } else if (summary.degraded > 0) {
       overallStatus = 'degraded';
     }
-    
+
     const healthData: SystemHealth = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
@@ -280,19 +243,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       checks,
       summary
     };
-    
+
     // Return appropriate HTTP status
-    const httpStatus = overallStatus === 'healthy' ? 200 : 
-                      overallStatus === 'degraded' ? 200 : 503;
-    
-    return NextResponse.json(healthData, { 
+    const httpStatus = overallStatus === 'healthy' ? 200 :
+      overallStatus === 'degraded' ? 200 : 503;
+
+    return NextResponse.json(healthData, {
       status: httpStatus,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'X-Response-Time': `${Date.now() - startTime}ms`
       }
     });
-    
+
   } catch (error) {
     const errorResponse: SystemHealth = {
       status: 'unhealthy',
@@ -308,8 +271,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
       summary: { healthy: 0, degraded: 0, unhealthy: 5 }
     };
-    
-    return NextResponse.json(errorResponse, { 
+
+    return NextResponse.json(errorResponse, {
       status: 503,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',

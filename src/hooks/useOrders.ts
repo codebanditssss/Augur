@@ -79,7 +79,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     if (!session?.access_token) {
       throw new Error('No authentication token available');
     }
-    
+
     return {
       'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json'
@@ -99,7 +99,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
 
       const headers = await getAuthHeaders();
       const params = new URLSearchParams();
-      
+
       if (status !== 'all') params.append('status', status);
       if (marketId) params.append('market_id', marketId);
       params.append('limit', limit.toString());
@@ -119,13 +119,13 @@ export function useOrders(options: UseOrdersOptions = {}) {
       }
 
       const data: OrdersResponse = await response.json();
-      
+
       if (append) {
         setOrders(prev => [...prev, ...data.orders]);
       } else {
         setOrders(data.orders);
       }
-      
+
       setPagination(data.pagination);
     } catch (err) {
       console.error('Error fetching orders:', err);
@@ -146,7 +146,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
 
     try {
       const headers = await getAuthHeaders();
-      
+
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers,
@@ -162,7 +162,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
       }
 
       const result: PlaceOrderResponse = await response.json();
-      
+
       // Add the new order to the local state if it matches current filters
       if (!status || status === 'all' || result.order.status === status) {
         if (!marketId || result.order.marketId === marketId) {
@@ -191,7 +191,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
 
     try {
       const headers = await getAuthHeaders();
-      
+
       const response = await fetch(`/api/orders/${orderId}`, {
         method: 'PATCH',
         headers,
@@ -207,9 +207,9 @@ export function useOrders(options: UseOrdersOptions = {}) {
       }
 
       // Update the order status in local state
-      setOrders(prev => 
-        prev.map(order => 
-          order.id === orderId 
+      setOrders(prev =>
+        prev.map(order =>
+          order.id === orderId
             ? { ...order, status: 'cancelled' as const }
             : order
         )
@@ -238,7 +238,11 @@ export function useOrders(options: UseOrdersOptions = {}) {
   // Auto-refresh setup
   useEffect(() => {
     if (autoRefresh && refreshInterval > 0) {
-      const interval = setInterval(refresh, refreshInterval);
+      const interval = setInterval(() => {
+        if (typeof document !== 'undefined' && !document.hidden) {
+          refresh();
+        }
+      }, refreshInterval);
       return () => clearInterval(interval);
     }
   }, [autoRefresh, refreshInterval, refresh]);
@@ -271,29 +275,29 @@ export function useOrders(options: UseOrdersOptions = {}) {
     // Core data
     orders,
     pagination,
-    
+
     // State
     loading,
     error,
     placing,
     cancelling,
-    
+
     // Actions
     placeOrder,
     cancelOrder,
     loadMore,
     refresh,
-    
+
     // Filtered data
     openOrders,
     filledOrders,
     cancelledOrders,
-    
+
     // Helper functions
     getOrdersByMarket,
     getOrdersByStatus,
     getOrderById,
-    
+
     // Computed values
     totalOrders: orders.length,
     totalVolume,
@@ -308,8 +312,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
 
 // Hook for a specific market's orders
 export function useMarketOrders(marketId: string) {
-  return useOrders({ 
-    marketId, 
+  return useOrders({
+    marketId,
     autoRefresh: true,
     refreshInterval: 10000 // More frequent updates for market-specific orders
   });
@@ -317,7 +321,7 @@ export function useMarketOrders(marketId: string) {
 
 // Hook for open orders only
 export function useOpenOrders() {
-  return useOrders({ 
+  return useOrders({
     status: 'open',
     autoRefresh: true,
     refreshInterval: 5000 // Very frequent updates for open orders

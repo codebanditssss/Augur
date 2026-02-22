@@ -4,7 +4,7 @@ import { RedirectManager } from '@/lib/redirect-manager'
 /**
  * Middleware with comprehensive redirect management and loop prevention
  */
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Skip API routes completely to avoid interference
   if (request.nextUrl.pathname.startsWith('/api')) {
     return NextResponse.next()
