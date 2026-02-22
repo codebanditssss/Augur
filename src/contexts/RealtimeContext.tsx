@@ -33,33 +33,28 @@ interface RealtimeProviderProps {
   maxEvents?: number;
 }
 
-export function RealtimeProvider({ 
-  children, 
-  autoConnect = true, 
-  maxEvents = 100 
+export function RealtimeProvider({
+  children,
+  autoConnect = true,
+  maxEvents = 100
 }: RealtimeProviderProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionState, setConnectionState] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
   const [lastEvent, setLastEvent] = useState<RealtimeEvent | null>(null);
   const [events, setEvents] = useState<RealtimeEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
-  
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const subscribersRef = useRef<Set<(event: RealtimeEvent) => void>>(new Set());
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
 
-  // Add event to buffer
+  const channelRef = useRef<any>(null);
+  const subscribersRef = useRef<Set<(event: RealtimeEvent) => void>>(new Set());
+
+  // Add event to buffer and notify subscribers
   const addEvent = useCallback((event: RealtimeEvent) => {
     setEvents(prev => {
       const newEvents = [...prev, event];
-      // Keep only the last maxEvents
       return newEvents.slice(-maxEvents);
     });
     setLastEvent(event);
-    
-    // Notify all subscribers
+
     subscribersRef.current.forEach(callback => {
       try {
         callback(event);
@@ -69,94 +64,80 @@ export function RealtimeProvider({
     });
   }, [maxEvents]);
 
-  // Connect to SSE endpoint
+  // Connect using native Supabase Realtime (WebSockets)
+  // This is much more efficient on Vercel as it doesn't burn Serverless GB-Hrs
   const connect = useCallback(() => {
-    if (eventSourceRef.current?.readyState === EventSource.OPEN) {
-      console.log('Already connected to realtime');
+    if (channelRef.current) {
+      console.log('Realtime channel already exists');
       return;
     }
 
     setConnectionState('connecting');
     setError(null);
-    
-    console.log('Connecting to realtime SSE...');
-    
+
+    console.log('Connecting to native Supabase Realtime...');
+
     try {
-      const eventSource = new EventSource('/api/realtime');
-      eventSourceRef.current = eventSource;
+      // Import supabase client dynamically to avoid SSR issues if necessary, 
+      // but here we can just import it at top level if it's client-side only
+      const { supabase } = require('@/lib/supabase');
 
-      eventSource.onopen = () => {
-        console.log('Connected to realtime SSE');
-        setIsConnected(true);
-        setConnectionState('connected');
-        setError(null);
-        reconnectAttempts.current = 0;
-      };
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data: RealtimeEvent = JSON.parse(event.data);
-          
-          if (data.type === 'connection') {
-            console.log('Realtime connection confirmed');
-          } else if (data.type === 'heartbeat') {
-            console.log('Realtime heartbeat');
-          } else if (data.type === 'database_change') {
-            console.log(`Database change: ${data.table} (${data.operation})`);
+      const channel = supabase.channel('db-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public' },
+          (payload: any) => {
+            console.log('Realtime change received:', payload);
+            addEvent({
+              type: 'database_change',
+              table: payload.table,
+              operation: payload.eventType,
+              data: payload.new || payload.old,
+              timestamp: new Date().toISOString()
+            });
           }
-          
-          addEvent(data);
-        } catch (error) {
-          console.error('Error parsing SSE data:', error);
-        }
-      };
+        )
+        .subscribe((status: string) => {
+          console.log('Realtime subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            setIsConnected(true);
+            setConnectionState('connected');
+            setError(null);
 
-      eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error);
-        setIsConnected(false);
-        setConnectionState('error');
-        setError('Connection lost');
-        
-        // Attempt reconnection with exponential backoff
-        if (reconnectAttempts.current < maxReconnectAttempts) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
-          console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${maxReconnectAttempts})`);
-          
-          reconnectTimeoutRef.current = setTimeout(() => {
-            reconnectAttempts.current++;
-            connect();
-          }, delay);
-        } else {
-          console.error('Max reconnection attempts reached');
-          setError('Failed to reconnect after multiple attempts');
-        }
-      };
+            // Send connection event for UI
+            addEvent({
+              type: 'connection',
+              message: 'Connected to Supabase Realtime',
+              timestamp: new Date().toISOString()
+            });
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            setIsConnected(false);
+            setConnectionState('error');
+            setError(`Realtime disabled or error: ${status}`);
+          }
+        });
 
-    } catch (error) {
-      console.error('Failed to create SSE connection:', error);
+      channelRef.current = channel;
+
+    } catch (err) {
+      console.error('Failed to setup Supabase Realtime:', err);
       setConnectionState('error');
-      setError('Failed to establish connection');
+      setError('Failed to establish real-time connection');
     }
   }, [addEvent]);
 
-  // Disconnect from SSE
+  // Disconnect
   const disconnect = useCallback(() => {
-    console.log('Disconnecting from realtime SSE');
-    
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
+    console.log('Disconnecting from Supabase Realtime');
+
+    if (channelRef.current) {
+      channelRef.current.unsubscribe();
+      channelRef.current = null;
     }
-    
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-    
+
     setIsConnected(false);
     setConnectionState('disconnected');
     setError(null);
-    reconnectAttempts.current = 0;
   }, []);
 
   // Clear event history
@@ -168,8 +149,6 @@ export function RealtimeProvider({
   // Subscribe to real-time events
   const subscribe = useCallback((callback: (event: RealtimeEvent) => void) => {
     subscribersRef.current.add(callback);
-    
-    // Return unsubscribe function
     return () => {
       subscribersRef.current.delete(callback);
     };
@@ -180,8 +159,6 @@ export function RealtimeProvider({
     if (autoConnect) {
       connect();
     }
-
-    // Cleanup on unmount
     return () => {
       disconnect();
     };
@@ -239,11 +216,11 @@ export function useRealtimeOrders() {
     return subscribe((event) => {
       if (event.type === 'database_change' && event.table === 'orders') {
         console.log(`Order ${event.operation}:`, event.data);
-        
+
         if (event.operation === 'INSERT') {
           setOrders(prev => [event.data, ...prev]);
         } else if (event.operation === 'UPDATE') {
-          setOrders(prev => prev.map(order => 
+          setOrders(prev => prev.map(order =>
             order.id === event.data.id ? { ...order, ...event.data } : order
           ));
         } else if (event.operation === 'DELETE') {
@@ -264,11 +241,11 @@ export function useRealtimeTrades() {
     return subscribe((event) => {
       if (event.type === 'database_change' && event.table === 'trades') {
         console.log(`Trade ${event.operation}:`, event.data);
-        
+
         if (event.operation === 'INSERT') {
           setTrades(prev => [event.data, ...prev]);
         } else if (event.operation === 'UPDATE') {
-          setTrades(prev => prev.map(trade => 
+          setTrades(prev => prev.map(trade =>
             trade.id === event.data.id ? { ...trade, ...event.data } : trade
           ));
         }

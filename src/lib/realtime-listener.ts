@@ -36,7 +36,7 @@ class RealtimeListener {
     try {
       // Use direct PostgreSQL connection string
       const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL
-      
+
       if (!connectionString) {
         throw new Error('DATABASE_URL or POSTGRES_URL environment variable is required')
       }
@@ -48,12 +48,12 @@ class RealtimeListener {
 
       await this.client.connect()
       this.isConnected = true
-      
+
       console.log('Connected to PostgreSQL for realtime notifications')
-      
+
       // Set up listeners for each channel
       await this.setupListeners()
-      
+
     } catch (error) {
       console.error('Failed to connect to PostgreSQL:', error)
       throw error
@@ -64,7 +64,7 @@ class RealtimeListener {
     if (!this.client) return
 
     const channels = ['orders_changes', 'trades_changes', 'user_balances_changes', 'markets_changes', 'realtime_test_changes']
-    
+
     // Listen to each channel
     for (const channel of channels) {
       await this.client.query(`LISTEN ${channel}`)
@@ -79,7 +79,7 @@ class RealtimeListener {
 
         const event: RealtimeEvent = JSON.parse(payload)
         this.handleEvent(channel, event)
-        
+
       } catch (error) {
         console.error('Error processing notification:', error)
       }
@@ -107,7 +107,7 @@ class RealtimeListener {
     const buffer = this.eventBuffer.get(channel)
     if (buffer) {
       buffer.push(event)
-      
+
       // Keep buffer size manageable
       if (buffer.length > this.maxBufferSize) {
         buffer.shift() // Remove oldest event
@@ -146,7 +146,7 @@ class RealtimeListener {
   // Subscribe to events on all channels
   subscribeAll(callback: (event: { channel: string; event: RealtimeEvent }) => void): () => void {
     const unsubscribeFunctions: (() => void)[] = []
-    
+
     // Subscribe to each channel
     this.subscribers.forEach((_, channel) => {
       const unsubscribe = this.subscribe(channel, (event) => {
@@ -165,7 +165,7 @@ class RealtimeListener {
   getRecentEvents(channel: string, limit = 10): RealtimeEvent[] {
     const buffer = this.eventBuffer.get(channel)
     if (!buffer) return []
-    
+
     return buffer.slice(-limit)
   }
 
@@ -196,6 +196,9 @@ class RealtimeListener {
 export const realtimeListener = new RealtimeListener()
 
 // Auto-connect in server environments
+// DISABLED: This causes connection leaks in Serverless environments (Vercel)
+/*
 if (typeof window === 'undefined') {
   realtimeListener.connect().catch(console.error)
-} 
+}
+*/

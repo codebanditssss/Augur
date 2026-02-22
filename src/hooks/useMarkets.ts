@@ -59,7 +59,7 @@ export function useMarkets({
   const fetchMarkets = async () => {
     try {
       setError(null);
-      
+
       // Build query parameters
       const params = new URLSearchParams();
       if (status !== 'all') params.append('status', status);
@@ -68,13 +68,13 @@ export function useMarkets({
       if (limit) params.append('limit', limit.toString());
 
       const response = await fetch(`/api/markets?${params.toString()}`);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch markets: ${response.statusText}`);
       }
 
       const data = await response.json();
-      
+
       // Convert date strings back to Date objects
       const marketsWithDates = data.map((market: any) => ({
         ...market,
@@ -96,12 +96,14 @@ export function useMarkets({
     fetchMarkets();
   }, [status, category, featured, limit]);
 
-  // Auto-refresh
+  // Auto-refresh (only when tab is visible)
   useEffect(() => {
     if (!autoRefresh || refreshInterval <= 0) return;
 
     const interval = setInterval(() => {
-      fetchMarkets();
+      if (typeof document !== 'undefined' && !document.hidden) {
+        fetchMarkets();
+      }
     }, refreshInterval);
 
     return () => clearInterval(interval);

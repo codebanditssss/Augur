@@ -83,9 +83,9 @@ interface UsePortfolioOptions {
 }
 
 export function usePortfolio(options: UsePortfolioOptions = {}) {
-  const { 
-    includeHistory = false, 
-    historyLimit = 10, 
+  const {
+    includeHistory = false,
+    historyLimit = 10,
     timeframe = 'ALL',
     autoRefresh = false,
     refreshInterval = 30000 // 30 seconds
@@ -100,7 +100,7 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
     if (!session?.access_token) {
       throw new Error('No authentication token available');
     }
-    
+
     return {
       'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json'
@@ -117,10 +117,10 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
 
     try {
       setError(null);
-      
+
       const headers = await getAuthHeaders();
       const params = new URLSearchParams();
-      
+
       if (includeHistory) {
         params.append('include_history', 'true');
         params.append('history_limit', historyLimit.toString());
@@ -159,10 +159,14 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
     fetchPortfolio();
   }, [fetchPortfolio]);
 
-  // Auto-refresh setup
+  // Auto-refresh setup (only when tab is visible)
   useEffect(() => {
     if (autoRefresh && refreshInterval > 0) {
-      const interval = setInterval(refresh, refreshInterval);
+      const interval = setInterval(() => {
+        if (typeof document !== 'undefined' && !document.hidden) {
+          refresh();
+        }
+      }, refreshInterval);
       return () => clearInterval(interval);
     }
   }, [autoRefresh, refreshInterval, refresh]);
@@ -250,7 +254,7 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
 
 // Hook for portfolio summary only (lighter weight)
 export function usePortfolioSummary() {
-  return usePortfolio({ 
+  return usePortfolio({
     includeHistory: false,
     autoRefresh: true,
     refreshInterval: 15000 // More frequent updates for summary
@@ -260,9 +264,9 @@ export function usePortfolioSummary() {
 // Hook for tracking specific position
 export function usePosition(marketId: string) {
   const { positions, loading, error, refresh } = usePortfolio();
-  
+
   const position = positions.find(pos => pos.marketId === marketId);
-  
+
   return {
     position,
     hasPosition: !!position,
