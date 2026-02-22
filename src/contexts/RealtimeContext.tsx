@@ -33,7 +33,6 @@ interface RealtimeProviderProps {
   maxEvents?: number;
 }
 
-import { supabase } from '@/lib/supabase';
 
 export function RealtimeProvider({
   children,
