@@ -7,6 +7,9 @@ node_modules/
 /.next/
 /out/
 /build
+*.tsbuildinfo
+.vercel
+.swc/
 
 # Environment variables
 .env
@@ -62,7 +65,8 @@ node_modules/
 .parcel-cache
 
 # Next.js build output
-.next
+.next/
+.swc/
 
 # Nuxt.js build / generate output
 .nuxt
