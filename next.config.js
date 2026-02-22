@@ -24,8 +24,8 @@ const config = {
     }
     return config;
   },
+  turbopack: {},
   experimental: {
-    turbopack: {},
     optimizePackageImports: ['@supabase/supabase-js', '@supabase/ssr']
   },
   serverExternalPackages: ['pg'],
