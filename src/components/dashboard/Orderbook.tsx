@@ -5,8 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useRealtimeOrderbook } from "@/hooks/useRealtimeOrderbook";
-import { 
-  TrendingUp, 
+import {
+  TrendingUp,
   TrendingDown,
   User,
   RefreshCw,
@@ -41,7 +41,7 @@ interface OrderbookProps {
 }
 
 export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isPending }: OrderbookProps) {
-  const [refreshInterval, setRefreshInterval] = useState(5); // seconds
+  const [refreshInterval, setRefreshInterval] = useState(30); // 30 seconds
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [viewMode, setViewMode] = useState<'combined' | 'yes' | 'no'>('combined');
   const [priceFilter, setPriceFilter] = useState<'all' | 'best' | 'recent'>('all');
@@ -100,7 +100,8 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
     realtimeUpdates
   };
 
-  // Auto-rotate orders every 3 seconds
+  // Auto-rotate orders every 3 seconds - DISABLED as per user request to stop auto-refreshes
+  /*
   useEffect(() => {
     if (isTransitioning || isPending) return; // Don't rotate during any transition state
 
@@ -115,6 +116,7 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
 
     return () => clearInterval(rotateInterval);
   }, [displayData.yesBids?.length, displayData.noAsks?.length, isTransitioning, isPending]);
+  */
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -129,8 +131,8 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
   // Calculate totals from real data
   const totalYesVolume = marketStats?.yesLiquidity || 0;
   const totalNoVolume = marketStats?.noLiquidity || 0;
-  const totalUsers = yesBids.reduce((sum: number, level: any) => sum + level.orders.length, 0) + 
-                     noAsks.reduce((sum: number, level: any) => sum + level.orders.length, 0);
+  const totalUsers = yesBids.reduce((sum: number, level: any) => sum + level.orders.length, 0) +
+    noAsks.reduce((sum: number, level: any) => sum + level.orders.length, 0);
 
   const handleRefresh = () => {
     refresh();
@@ -148,7 +150,7 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
   // Get visible orders based on current index and filter
   const getVisibleOrders = (orders: typeof yesBids) => {
     if (!orders?.length) return [];
-    
+
     let filteredOrders = orders;
 
     // Apply price filter
@@ -174,7 +176,7 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
   // Render order rows with filtering
   const renderOrderRows = (type: 'yes' | 'no') => {
     const orders = type === 'yes' ? displayData.yesBids : displayData.noAsks;
-    
+
     if (!orders?.length) {
       return (
         <tr>
@@ -191,14 +193,13 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
       const depthPercentage = calculateDepthPercentage(level.quantity);
       const isNewOrder = false; // Not available in OrderbookLevel
       const isUpdated = false; // Not available in OrderbookLevel
-      
+
       return (
-        <tr 
+        <tr
           key={`${level.price}-${index}`}
-          className={`relative ${
-            isNewOrder ? 'animate-highlight-green' :
+          className={`relative ${isNewOrder ? 'animate-highlight-green' :
             isUpdated ? 'animate-highlight-yellow' : ''
-          }`}
+            }`}
         >
           <td className="py-2 pl-4">
             <div className="flex items-center gap-2">
@@ -430,11 +431,11 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
                     {getVisibleOrders(yesBids).map((level, index) => (
                       <div key={`yes-${level.price}`} className="relative group">
                         {/* Depth Bar */}
-                        <div 
+                        <div
                           className="absolute left-0 top-0 h-full bg-blue-50 opacity-60 transition-all duration-300"
                           style={{ width: `${calculateDepthPercentage(level.quantity)}%` }}
                         />
-                        
+
                         {/* Order Row */}
                         <div className="relative grid grid-cols-4 gap-2 py-1.5 text-sm hover:bg-blue-50 cursor-pointer transition-colors">
                           <div className="font-medium text-blue-600">
@@ -490,11 +491,11 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
                     {getVisibleOrders(noAsks).map((level, index) => (
                       <div key={`no-${level.price}`} className="relative group">
                         {/* Depth Bar */}
-                        <div 
+                        <div
                           className="absolute left-0 top-0 h-full bg-gray-100 opacity-60 transition-all duration-300"
                           style={{ width: `${calculateDepthPercentage(level.quantity)}%` }}
                         />
-                        
+
                         {/* Order Row */}
                         <div className="relative grid grid-cols-4 gap-2 py-1.5 text-sm hover:bg-gray-50 cursor-pointer transition-colors">
                           <div className="font-medium text-gray-700">
@@ -556,17 +557,15 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
                   ).map((level, index) => (
                     <div key={`${viewMode}-${level.price}`} className="relative group">
                       {/* Depth Bar */}
-                      <div 
-                        className={`absolute left-0 top-0 h-full opacity-60 transition-all duration-300 ${
-                          viewMode === 'yes' ? 'bg-blue-50' : 'bg-gray-100'
-                        }`}
+                      <div
+                        className={`absolute left-0 top-0 h-full opacity-60 transition-all duration-300 ${viewMode === 'yes' ? 'bg-blue-50' : 'bg-gray-100'
+                          }`}
                         style={{ width: `${calculateDepthPercentage(level.quantity)}%` }}
                       />
-                      
+
                       {/* Order Row */}
-                      <div className={`relative grid grid-cols-5 gap-2 py-2 text-sm cursor-pointer transition-colors ${
-                        viewMode === 'yes' ? 'hover:bg-blue-50' : 'hover:bg-gray-50'
-                      }`}>
+                      <div className={`relative grid grid-cols-5 gap-2 py-2 text-sm cursor-pointer transition-colors ${viewMode === 'yes' ? 'hover:bg-blue-50' : 'hover:bg-gray-50'
+                        }`}>
                         <div className={`font-medium ${viewMode === 'yes' ? 'text-blue-600' : 'text-gray-700'}`}>
                           ₹{formatPrice(level.price)}
                         </div>

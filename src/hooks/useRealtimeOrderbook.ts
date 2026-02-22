@@ -68,7 +68,7 @@ export function useRealtimeOrderbook(options: UseRealtimeOrderbookOptions = {}) 
   useEffect(() => {
     if (marketId !== currentMarketRef.current) {
       setIsTransitioning(true);
-      
+
       // Store the last stable data before transition
       setStableData(prevStableData => {
         if (currentData && !currentData.isStale) {
@@ -76,10 +76,10 @@ export function useRealtimeOrderbook(options: UseRealtimeOrderbookOptions = {}) 
         }
         return prevStableData;
       });
-      
+
       // Update ref immediately to prevent multiple transitions
       currentMarketRef.current = marketId;
-      
+
       // Clear any pending timeouts
       if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
       if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
@@ -129,51 +129,9 @@ export function useRealtimeOrderbook(options: UseRealtimeOrderbookOptions = {}) 
   }, [marketId, isTransitioning, orderbookData.orderbook, orderbookData.yesBids, orderbookData.noAsks, orderbookData.marketInfo, orderbookData.bestPrices, orderbookData.marketStats, orderbookData.spread, orderbookData.spreadPercentage]);
 
   // Handle real-time updates with debouncing
-  const handleRealtimeEvent = useCallback((event: MessageEvent) => {
-    try {
-      const data = JSON.parse(event.data);
-      
-      // Only process events if we're not transitioning
-      if (!isTransitioning) {
-        switch (data.type) {
-          case 'order_created':
-          case 'order_cancelled':
-          case 'order_filled':
-          case 'trade_executed':
-            // Clear any pending update
-            if (updateTimeoutRef.current) {
-              clearTimeout(updateTimeoutRef.current);
-            }
-
-            // Mark current data as stale and trigger refresh
-            setCurrentData(prev => prev ? { ...prev, isStale: true } : null);
-            orderbookData.refresh();
-            break;
-          default:
-            break;
-        }
-      }
-    } catch (err) {
-      console.error('Error processing realtime event:', err);
-    }
-  }, [isTransitioning, orderbookData]);
-
-  // Set up SSE connection
-  useEffect(() => {
-    if (!marketId) return;
-
-    const eventSource = new EventSource('/api/realtime');
-    eventSource.onmessage = handleRealtimeEvent;
-    
-    eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
-      eventSource.close();
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  }, [marketId, handleRealtimeEvent]);
+  // Note: We've switched to a global RealtimeContext, so individual hooks 
+  // shouldn't manage their own connections to avoid exhausting Vercel resources.
+  // This hook now relies on the base useOrderbook polling and manual refreshes.
 
   // Return stable data during transition, current data otherwise
   const displayData = isTransitioning ? stableData : currentData;

@@ -57,7 +57,7 @@ interface UseOrderbookOptions {
 export function useOrderbook(marketId?: string, options: UseOrderbookOptions = {}) {
   const {
     autoRefresh = true,
-    refreshInterval = 5000
+    refreshInterval = 30000
   } = options;
 
   const [orderbook, setOrderbook] = useState<OrderbookData | null>(null);
@@ -81,7 +81,7 @@ export function useOrderbook(marketId?: string, options: UseOrderbookOptions = {
       }
 
       const response = await fetch(`/api/orderbook?market_id=${marketId}`);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to fetch orderbook');
@@ -108,7 +108,7 @@ export function useOrderbook(marketId?: string, options: UseOrderbookOptions = {
     if (autoRefresh && marketId && refreshInterval > 0) {
       // Initial fetch
       fetchOrderbook();
-      
+
       // Set up interval
       const interval = setInterval(fetchOrderbook, refreshInterval);
       return () => clearInterval(interval);
@@ -126,8 +126,8 @@ export function useOrderbook(marketId?: string, options: UseOrderbookOptions = {
   const hasData = !!orderbook
   const isEmpty = hasData && orderbook.orderbook.totalOrderbookVolume === 0
   const spread = orderbook?.orderbook.spread
-  const spreadPercentage = spread && orderbook?.orderbook.bestYesBid 
-    ? (spread / orderbook.orderbook.bestYesBid) * 100 
+  const spreadPercentage = spread && orderbook?.orderbook.bestYesBid
+    ? (spread / orderbook.orderbook.bestYesBid) * 100
     : 0
 
   // Market statistics
@@ -135,8 +135,8 @@ export function useOrderbook(marketId?: string, options: UseOrderbookOptions = {
     totalLiquidity: orderbook.orderbook.totalYesQuantity + orderbook.orderbook.totalNoQuantity,
     yesLiquidity: orderbook.orderbook.totalYesQuantity,
     noLiquidity: orderbook.orderbook.totalNoQuantity,
-    liquidityRatio: orderbook.orderbook.totalOrderbookVolume > 0 
-      ? (orderbook.orderbook.totalYesQuantity / orderbook.orderbook.totalOrderbookVolume) * 100 
+    liquidityRatio: orderbook.orderbook.totalOrderbookVolume > 0
+      ? (orderbook.orderbook.totalYesQuantity / orderbook.orderbook.totalOrderbookVolume) * 100
       : 50,
     recentTradeCount: orderbook.recentTrades.length,
     lastTradePrice: orderbook.recentTrades[0]?.price || orderbook.marketInfo.currentPrice,
@@ -157,21 +157,21 @@ export function useOrderbook(marketId?: string, options: UseOrderbookOptions = {
     if (!orderbook) return null
 
     const { yesBids, noAsks } = orderbook.orderbook
-    
+
     // Calculate total volume at different price levels
     const yesVolume5 = yesBids.slice(0, 5).reduce((sum, level) => sum + level.quantity, 0)
     const noVolume5 = noAsks.slice(0, 5).reduce((sum, level) => sum + level.quantity, 0)
-    
+
     return {
       top5YesVolume: yesVolume5,
       top5NoVolume: noVolume5,
       yesDepth: yesBids.length,
       noDepth: noAsks.length,
-      averageYesOrderSize: yesBids.length > 0 
-        ? yesBids.reduce((sum, level) => sum + level.quantity, 0) / yesBids.length 
+      averageYesOrderSize: yesBids.length > 0
+        ? yesBids.reduce((sum, level) => sum + level.quantity, 0) / yesBids.length
         : 0,
-      averageNoOrderSize: noAsks.length > 0 
-        ? noAsks.reduce((sum, level) => sum + level.quantity, 0) / noAsks.length 
+      averageNoOrderSize: noAsks.length > 0
+        ? noAsks.reduce((sum, level) => sum + level.quantity, 0) / noAsks.length
         : 0
     }
   }, [orderbook])
@@ -183,25 +183,25 @@ export function useOrderbook(marketId?: string, options: UseOrderbookOptions = {
     yesBids: orderbook?.orderbook.yesBids || [],
     noAsks: orderbook?.orderbook.noAsks || [],
     recentTrades: orderbook?.recentTrades || [],
-    
+
     // State
     loading,
     error,
     hasData,
     isEmpty,
-    
+
     // Actions
     refresh,
-    
+
     // Computed values
     bestPrices,
     spread,
     spreadPercentage: Math.round(spreadPercentage * 100) / 100,
     marketStats,
-    
+
     // Analysis functions
     getDepthAnalysis,
-    
+
     // Utility functions
     formatPrice: (price: number) => (price / 10).toFixed(1), // Convert from API format (0-100) to display format (0-10)
     getMaxQuantity: () => {
@@ -245,7 +245,7 @@ export function useOrderbookSummary(marketIds: string[]) {
 
       const results = await Promise.all(promises)
       const validResults = results.filter(result => result !== null)
-      
+
       const newSummaries = validResults.reduce((acc, result) => ({ ...acc, ...result }), {})
       setSummaries(newSummaries)
 
