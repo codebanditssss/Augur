@@ -6,7 +6,12 @@ const config = {
     GOTRUE_DISABLE_DEBUG_LOGGING: 'true'
   },
   images: {
-    domains: ['localhost']
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+    ],
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -19,11 +24,11 @@ const config = {
     }
     return config;
   },
-  serverExternalPackages: ['pg'],
-  // Ensure proper build output generation
   experimental: {
+    turbopack: {},
     optimizePackageImports: ['@supabase/supabase-js', '@supabase/ssr']
-  }
+  },
+  serverExternalPackages: ['pg'],
 }
 
 module.exports = config 
