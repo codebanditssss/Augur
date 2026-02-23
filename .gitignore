@@ -82,6 +82,9 @@ dist
 tmp/
 temp/
 
+# Agent & Dev docs (local only)
+.agent/
+
 # Editor directories and files
 .vscode/
 .idea/
