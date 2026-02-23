@@ -29,7 +29,7 @@ export class RedirectManager {
   private static getRedirectHistory(request: NextRequest): string[] {
     const historyStr = request.cookies.get(this.REDIRECT_HISTORY_KEY)?.value;
     if (!historyStr) return [];
-    
+
     try {
       return JSON.parse(historyStr);
     } catch {
@@ -84,7 +84,13 @@ export class RedirectManager {
   /**
    * Determine user state for redirect decisions
    */
-  static async getUserState(request: NextRequest): Promise<RedirectState> {
+  static async getUserState(request: NextRequest): Promise<{ state: RedirectState; response: NextResponse }> {
+    let response = NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    });
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -92,6 +98,24 @@ export class RedirectManager {
         cookies: {
           get(name: string) {
             return request.cookies.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            request.cookies.set({ name, value, ...options });
+            response = NextResponse.next({
+              request: {
+                headers: request.headers,
+              },
+            });
+            response.cookies.set({ name, value, ...options });
+          },
+          remove(name: string, options: any) {
+            request.cookies.set({ name, value: '', ...options });
+            response = NextResponse.next({
+              request: {
+                headers: request.headers,
+              },
+            });
+            response.cookies.set({ name, value: '', ...options });
           },
         },
       }
@@ -122,11 +146,14 @@ export class RedirectManager {
     }
 
     return {
-      isAuthenticated: !!user && !error,
-      hasProfile,
-      isOnboardingComplete,
-      currentPath,
-      redirectHistory
+      state: {
+        isAuthenticated: !!user && !error,
+        hasProfile,
+        isOnboardingComplete,
+        currentPath,
+        redirectHistory
+      },
+      response
     };
   }
 
@@ -174,20 +201,20 @@ export class RedirectManager {
    * Execute a redirect with loop protection
    */
   static executeRedirect(
-    request: NextRequest, 
+    request: NextRequest,
     targetPath: string,
     reason?: string
   ): NextResponse | null {
     const currentPath = request.nextUrl.pathname;
     const history = this.getRedirectHistory(request);
-    
+
     // Check for redirect loops
     if (this.wouldCreateLoop(history, currentPath, targetPath)) {
       console.warn(`Redirect loop prevented: ${currentPath} -> ${targetPath}`, {
         history,
         reason: reason || 'Unknown'
       });
-      
+
       // Clear history and redirect to safe default
       const response = NextResponse.redirect(new URL('/dashboard', request.url));
       this.clearHistory(response);
@@ -198,7 +225,7 @@ export class RedirectManager {
     const response = NextResponse.redirect(new URL(targetPath, request.url));
     const newHistory = [...history, currentPath].slice(-this.MAX_REDIRECTS);
     this.setRedirectHistory(response, newHistory);
-    
+
     console.log(`Redirect executed: ${currentPath} -> ${targetPath}`, {
       reason: reason || 'Route rule',
       history: newHistory
@@ -211,31 +238,37 @@ export class RedirectManager {
    * Main middleware function with comprehensive redirect management
    */
   static async handleMiddleware(request: NextRequest): Promise<NextResponse> {
-    const state = await this.getUserState(request);
+    const { state, response } = await this.getUserState(request);
     const targetPath = this.getRedirectTarget(state);
 
     console.log(`[RedirectManager] Path: ${state.currentPath}, Auth: ${state.isAuthenticated}, Complete: ${state.isOnboardingComplete}, Target: ${targetPath}`);
 
     // No redirect needed
     if (!targetPath) {
-      const response = NextResponse.next();
-      
       // Clear redirect history on successful page load
       if (!request.nextUrl.pathname.startsWith('/api')) {
         this.clearHistory(response);
       }
-      
+
       return response;
     }
 
     // Execute redirect with loop protection
     const redirectResponse = this.executeRedirect(
-      request, 
+      request,
       targetPath,
       `User state: auth=${state.isAuthenticated}, complete=${state.isOnboardingComplete}`
     );
 
-    return redirectResponse || NextResponse.next();
+    // Copy cookies from getUserState response to redirect response
+    if (redirectResponse) {
+      response.cookies.getAll().forEach(cookie => {
+        redirectResponse.cookies.set(cookie);
+      });
+      return redirectResponse;
+    }
+
+    return response;
   }
 }
 
@@ -273,7 +306,7 @@ export class ClientRedirectManager {
     if (this.redirectTimeout) {
       clearTimeout(this.redirectTimeout);
     }
-    
+
     this.redirectTimeout = setTimeout(() => {
       this.isRedirecting = false;
     }, 2000);
@@ -287,7 +320,7 @@ export class ClientRedirectManager {
   static reset(): void {
     this.isRedirecting = false;
     this.lastRedirect = '';
-    
+
     if (this.redirectTimeout) {
       clearTimeout(this.redirectTimeout);
       this.redirectTimeout = null;
@@ -310,20 +343,26 @@ export const RouteGuards = {
   protectedPaths: ['/dashboard', '/Markets', '/Portfolio', '/MarketDepth', '/TradeHistory', '/Leaderboard', '/Settings'],
   publicPaths: ['/', '/auth'],
   onboardingPath: '/onboarding',
-  
+
   isProtectedPath(path: string): boolean {
-    return this.protectedPaths.some(protectedPath => 
-      path === protectedPath || path.startsWith(protectedPath + '/')
-    );
+    const lowerPath = path.toLowerCase();
+    return this.protectedPaths.some(protectedPath => {
+      const lowerProtected = protectedPath.toLowerCase();
+      return lowerPath === lowerProtected || lowerPath.startsWith(lowerProtected + '/');
+    });
   },
 
   isPublicPath(path: string): boolean {
-    return this.publicPaths.some(publicPath => 
-      path === publicPath || path.startsWith(publicPath + '/')
-    );
+    const lowerPath = path.toLowerCase();
+    return this.publicPaths.some(publicPath => {
+      const lowerPublic = publicPath.toLowerCase();
+      return lowerPath === lowerPublic || lowerPath.startsWith(lowerPublic + '/');
+    });
   },
 
   isOnboardingPath(path: string): boolean {
-    return path === this.onboardingPath || path.startsWith(this.onboardingPath + '/');
+    const lowerPath = path.toLowerCase();
+    const lowerOnboarding = this.onboardingPath.toLowerCase();
+    return lowerPath === lowerOnboarding || lowerPath.startsWith(lowerOnboarding + '/');
   }
 }; 

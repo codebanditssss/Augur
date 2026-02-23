@@ -105,7 +105,8 @@ export async function GET(request: NextRequest) {
         tags: market.tags || [],
         featured: market.is_featured || false,
         riskLevel: calculateRiskLevel(daysUntilExpiry, market.category || 'general'),
-        probability: yesPrice
+        probability: yesPrice,
+        actualOutcome: market.actual_outcome
       };
     }) || [];
 

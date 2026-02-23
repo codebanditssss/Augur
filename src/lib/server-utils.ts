@@ -48,6 +48,20 @@ export async function getAuthenticatedServerClient(request?: NextRequest) {
         get(name: string) {
           return cookieStore.get(name)?.value
         },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (error) {
+            // This can happen if we're in a Server Component
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch (error) {
+            // This can happen if we're in a Server Component
+          }
+        },
       },
     }
   )

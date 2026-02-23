@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { 
+import {
   BarChart3,
   Plus,
   Search,
@@ -14,8 +14,10 @@ import {
   TrendingUp,
   Users,
   DollarSign,
-  Calendar
+  Calendar,
+  AlertTriangle
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AdminMarket {
   id: string;
@@ -36,12 +38,12 @@ interface AdminMarket {
 }
 
 const MarketCard = ({ market, onAction }: { market: AdminMarket; onAction: (action: string, marketId: string) => void }) => {
-  const yesPrice = market.total_volume > 0 
-    ? Math.round((market.total_yes_volume / market.total_volume) * 100) 
+  const yesPrice = market.total_volume > 0
+    ? Math.round((market.total_yes_volume / market.total_volume) * 100)
     : 50;
-  
+
   const noPrice = 100 - yesPrice;
-  
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -100,7 +102,7 @@ const MarketCard = ({ market, onAction }: { market: AdminMarket; onAction: (acti
             )}
           </div>
         </div>
-        
+
         <div className="flex flex-col items-end space-y-2">
           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(market.status)}`}>
             {market.status}
@@ -181,6 +183,10 @@ export default function AdminMarkets() {
   const [page, setPage] = useState(1);
   const [totalMarkets, setTotalMarkets] = useState(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showResolveModal, setShowResolveModal] = useState(false);
+  const [resolvingMarket, setResolvingMarket] = useState<AdminMarket | null>(null);
+  const [resolutionOutcome, setResolutionOutcome] = useState<'YES' | 'NO' | 'CANCEL'>('YES');
+  const [isSubmittingResolution, setIsSubmittingResolution] = useState(false);
   const marketsPerPage = 12;
 
   const fetchMarkets = async () => {
@@ -228,8 +234,11 @@ export default function AdminMarkets() {
       }
 
       if (action === 'resolve') {
-        // Open resolution modal (you'd implement this)
-        console.log('Resolve market:', marketId);
+        const market = markets.find(m => m.id === marketId);
+        if (market) {
+          setResolvingMarket(market);
+          setShowResolveModal(true);
+        }
         return;
       }
 
@@ -403,24 +412,81 @@ export default function AdminMarkets() {
         </div>
       )}
 
-      {/* Create Market Modal Placeholder */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Create New Market</h3>
-            <p className="text-gray-600 mb-4">Market creation form would go here.</p>
-            <div className="flex justify-end space-x-2">
+      {/* Resolve Market Modal */}
+      {showResolveModal && resolvingMarket && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border border-gray-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-yellow-100 rounded-xl">
+                <AlertTriangle className="h-6 w-6 text-yellow-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Resolve Market</h3>
+            </div>
+
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              Select the final outcome for <span className="font-semibold text-gray-900">"{resolvingMarket.title}"</span>.
+              This action will settle all trades and is <span className="text-red-600 font-bold">irreversible</span>.
+            </p>
+
+            <div className="space-y-3 mb-8">
+              {(['YES', 'NO', 'CANCEL'] as const).map((outcome) => (
+                <button
+                  key={outcome}
+                  onClick={() => setResolutionOutcome(outcome)}
+                  className={`w-full py-4 px-6 rounded-xl border-2 transition-all font-bold text-lg flex items-center justify-between ${resolutionOutcome === outcome
+                      ? outcome === 'YES' ? 'border-green-500 bg-green-50 text-green-700' :
+                        outcome === 'NO' ? 'border-red-500 bg-red-50 text-red-700' :
+                          'border-gray-500 bg-gray-50 text-gray-700'
+                      : 'border-gray-100 hover:border-gray-300 text-gray-600'
+                    }`}
+                >
+                  {outcome}
+                  {resolutionOutcome === outcome && <CheckCircle className="h-5 w-5" />}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
               <button
-                onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                onClick={() => {
+                  setShowResolveModal(false);
+                  setResolvingMarket(null);
+                }}
+                disabled={isSubmittingResolution}
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                onClick={async () => {
+                  setIsSubmittingResolution(true);
+                  try {
+                    const response = await fetch('/api/admin/markets/resolve', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        marketId: resolvingMarket.id,
+                        outcome: resolutionOutcome
+                      })
+                    });
+
+                    if (!response.ok) throw new Error('Resolution failed');
+
+                    toast.success(`Market resolved as ${resolutionOutcome}`);
+                    setShowResolveModal(false);
+                    setResolvingMarket(null);
+                    fetchMarkets();
+                  } catch (err) {
+                    toast.error('Failed to resolve market');
+                    console.error(err);
+                  } finally {
+                    setIsSubmittingResolution(false);
+                  }
+                }}
+                disabled={isSubmittingResolution}
+                className="flex-1 px-4 py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-black transition-colors shadow-lg disabled:opacity-50 flex items-center justify-center"
               >
-                Create
+                {isSubmittingResolution ? 'Processing...' : 'Confirm Resolution'}
               </button>
             </div>
           </div>

@@ -1,13 +1,14 @@
 import { NextRequest } from 'next/server';
-import { 
-  withAuthentication, 
+import {
+  withAuthentication,
   getServiceRoleClient,
-  validateRequestInput, 
-  createErrorResponse, 
-  createSuccessResponse 
+  validateRequestInput,
+  createErrorResponse,
+  createSuccessResponse
 } from '@/lib/server-utils';
 import { TradingEngine } from '@/lib/trading-engine';
 import { supabase as publicSupabase } from '@/lib/supabase'; // Public client for market validation
+import { withRateLimit } from '@/lib/rate-limiter';
 
 // GET handler for fetching user's orders
 async function getOrdersHandler(user: any, supabase: any, request: NextRequest) {
@@ -111,7 +112,7 @@ async function getOrdersHandler(user: any, supabase: any, request: NextRequest) 
 async function placeOrderHandler(user: any, supabase: any, request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Validate required fields
     const validation = validateRequestInput(body, ['marketId', 'side', 'quantity', 'price']);
     if (!validation.isValid) {
@@ -187,11 +188,11 @@ async function placeOrderHandler(user: any, supabase: any, request: NextRequest)
       filledQuantity: result.filledQuantity || 0,
       remainingQuantity: result.remainingQuantity || numericQuantity,
       trades: result.trades || [],
-      message: result.trades && result.trades.length > 0 
+      message: result.trades && result.trades.length > 0
         ? `Order placed and ${result.filledQuantity} shares executed immediately`
         : 'Order placed successfully'
     }, 201);
-    
+
   } catch (error) {
     console.error('Place order API error:', error);
     if (error instanceof SyntaxError) {
@@ -229,7 +230,7 @@ async function updateOrderHandler(user: any, supabase: any, request: NextRequest
     if (action === 'cancel') {
       const engine = new TradingEngine();
       const result = await engine.cancelOrder(orderId.trim(), user.id);
-      
+
       if (!result.success) {
         return createErrorResponse(result.error || 'Failed to cancel order', 400);
       }
@@ -255,7 +256,7 @@ async function updateOrderHandler(user: any, supabase: any, request: NextRequest
 
 // DELETE handler for cancelling orders
 async function deleteOrderHandler(user: any, supabase: any, request: NextRequest) {
-    try {
+  try {
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
 
@@ -265,13 +266,13 @@ async function deleteOrderHandler(user: any, supabase: any, request: NextRequest
 
     const engine = new TradingEngine();
     const result = await engine.cancelOrder(orderId.trim(), user.id);
-    
+
     if (!result.success) {
       return createErrorResponse(result.error || 'Failed to cancel order', 400);
     }
 
     return createSuccessResponse({
-        success: true,
+      success: true,
       message: 'Order cancelled successfully'
     });
 
@@ -283,6 +284,6 @@ async function deleteOrderHandler(user: any, supabase: any, request: NextRequest
 
 // Export the wrapped handlers
 export const GET = withAuthentication(getOrdersHandler);
-export const POST = withAuthentication(placeOrderHandler);
+export const POST = withRateLimit('CRITICAL', withAuthentication(placeOrderHandler) as any);
 export const PATCH = withAuthentication(updateOrderHandler);
 export const DELETE = withAuthentication(deleteOrderHandler);

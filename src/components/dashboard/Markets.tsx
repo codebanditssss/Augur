@@ -96,14 +96,7 @@ export function Markets() {
     featured: featuredOnly || undefined
   });
 
-  // Auto-refresh market data
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refreshMarkets();
-    }, 30000); // 30 seconds
 
-    return () => clearInterval(interval);
-  }, [refreshMarkets]);
 
   // Transform API markets to match frontend interface by adding icon (for UI only)
   const marketsWithIcon = apiMarkets.map(market => ({
@@ -402,8 +395,8 @@ export function Markets() {
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
                 className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${selectedCategory === category.id
-                    ? 'bg-gray-900 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 hover:shadow-sm'
+                  ? 'bg-gray-900 text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 hover:shadow-sm'
                   }`}
               >
                 <Icon className="h-4 w-4" />
@@ -598,16 +591,24 @@ export function Markets() {
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-start justify-between gap-4 mb-3">
                                     <div className="flex-1">
-                                      {/* <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                                         <Badge variant="outline" className="text-xs">
                                           {market.category.charAt(0).toUpperCase() + market.category.slice(1)}
                                         </Badge>
                                         <Badge className={`text-xs ${getStatusColor(market.status)}`}>
                                           {getStatusText(market.status)}
                                         </Badge>
+
+                                        {market.status === 'resolved' && market.actualOutcome && (
+                                          <Badge className="text-xs bg-yellow-400 text-yellow-900 border-yellow-500 font-bold">
+                                            {market.actualOutcome.toUpperCase()} WON
+                                          </Badge>
+                                        )}
+
                                         <Badge className={`text-xs ${getRiskColor(market.riskLevel)}`}>
                                           {market.riskLevel.toUpperCase()} RISK
                                         </Badge>
+
                                         {market.trending && (
                                           <Badge className="text-xs bg-red-100 text-red-800">
                                             <TrendingUp className="h-3 w-3 mr-1" />
@@ -615,11 +616,11 @@ export function Markets() {
                                           </Badge>
                                         )}
                                         {market.featured && (
-                                          <Badge className="text-xs bg-yellow-100 text-yellow-800">
+                                          <Badge className="text-xs bg-blue-100 text-blue-800">
                                             Featured
                                           </Badge>
                                         )}
-                                      </div> */}
+                                      </div>
 
                                       <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
                                         {market.title}
@@ -743,6 +744,11 @@ export function Markets() {
                                   <Badge className={`text-xs ${getStatusColor(market.status)}`}>
                                     {getStatusText(market.status)}
                                   </Badge>
+                                  {market.status === 'resolved' && market.actualOutcome && (
+                                    <Badge className="text-xs bg-yellow-400 text-yellow-900 border-yellow-500 font-bold">
+                                      {market.actualOutcome.toUpperCase()} WON
+                                    </Badge>
+                                  )}
                                   <Badge className={`text-xs ${getRiskColor(market.riskLevel)}`}>
                                     {market.riskLevel.toUpperCase()}
                                   </Badge>

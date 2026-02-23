@@ -26,6 +26,7 @@ export interface Market {
   featured: boolean;
   riskLevel: 'low' | 'medium' | 'high';
   probability: number;
+  actualOutcome?: string;
 }
 
 interface UseMarketsParams {

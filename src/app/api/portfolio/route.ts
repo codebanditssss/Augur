@@ -46,7 +46,7 @@ function getDateRange(timeframe: string): { start: Date, end: Date } {
 // Helper function to calculate position value at a point in time
 function calculatePositionValue(trades: any[], marketData: any, timestamp: Date) {
   const relevantTrades = trades.filter(t => new Date(t.created_at) <= timestamp);
-  
+
   if (relevantTrades.length === 0) return 0;
 
   let yesShares = 0;
@@ -70,22 +70,22 @@ function calculatePositionValue(trades: any[], marketData: any, timestamp: Date)
 
   // For active markets
   const totalVolume = (marketData.total_yes_volume || 0) + (marketData.total_no_volume || 0);
-  const currentYesPrice = totalVolume > 0 
-    ? (marketData.total_yes_volume || 0) / totalVolume * 100 
+  const currentYesPrice = totalVolume > 0
+    ? (marketData.total_yes_volume || 0) / totalVolume * 100
     : 50;
   const currentNoPrice = 100 - currentYesPrice;
 
   const yesValue = yesShares * (currentYesPrice / 100);
   const noValue = noShares * (currentNoPrice / 100);
   const currentValue = yesValue + noValue;
-  
+
   return currentValue - totalInvested; // P&L
 }
 
 async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
   try {
     const { searchParams } = new URL(request.url)
-    
+
     const includeHistory = searchParams.get('include_history') === 'true'
     const historyLimit = parseInt(searchParams.get('history_limit') || '100')
     const timeframe = searchParams.get('timeframe') || 'ALL'
@@ -173,7 +173,7 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
     let periodTotalTrades = 0
     let periodWinningTrades = 0
     let periodTotalVolume = 0
-    
+
     // Group orders by market for P&L calculation
     const ordersByMarket = new Map()
     orders?.forEach(order => {
@@ -182,10 +182,10 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       }
       ordersByMarket.get(order.market_id).push(order)
     })
-    
+
     orders?.forEach(order => {
       if (order.status !== 'filled') return // Only consider filled orders
-      
+
       const marketId = order.market_id
       if (!positionsByMarket.has(marketId)) {
         positionsByMarket.set(marketId, {
@@ -205,7 +205,7 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       }
 
       const position = positionsByMarket.get(marketId)
-      
+
       // Calculate effective quantity and investment
       const effectiveQuantity = order.filled_quantity || 0
       const investedAmount = effectiveQuantity * order.price / 100
@@ -246,8 +246,8 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       if (market.status === 'active') {
         // For active markets, calculate P&L based on current market prices
         const totalVolume = (market.total_yes_volume || 0) + (market.total_no_volume || 0)
-        const currentYesPrice = totalVolume > 0 
-          ? (market.total_yes_volume || 0) / totalVolume * 100 
+        const currentYesPrice = totalVolume > 0
+          ? (market.total_yes_volume || 0) / totalVolume * 100
           : 50
         const currentNoPrice = 100 - currentYesPrice
 
@@ -272,10 +272,10 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
     const totalUnrealizedPnL = portfolioPositions.reduce((sum, pos) => sum + pos.unrealizedPnL, 0)
     const totalRealizedPnL = portfolioPositions.reduce((sum, pos) => sum + pos.realizedPnL, 0)
     const totalInvested = portfolioPositions.reduce((sum, pos) => sum + pos.totalInvested, 0)
-    
+
     // Calculate period win rate
-    const winRate = periodTotalTrades > 0 
-      ? (periodWinningTrades / periodTotalTrades) * 100 
+    const winRate = periodTotalTrades > 0
+      ? (periodWinningTrades / periodTotalTrades) * 100
       : 0
 
     // Calculate total value (invested + unrealized P&L)
@@ -287,19 +287,19 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       .map(order => {
         // Calculate P&L for this individual trade
         const tradeValue = (order.filled_quantity || 0) * order.price / 100;
-        
+
         // For now, use simplified P&L calculation
         // TODO: This should be more sophisticated based on market resolution
         let tradePnL = 0;
         const market = order.markets;
-        
+
         if (market?.status === 'resolved' && market?.actual_outcome) {
           // For resolved markets, calculate actual P&L
           const isWinner = order.side === market.actual_outcome;
           tradePnL = isWinner ? (order.filled_quantity || 0) - tradeValue : -tradeValue;
         } else {
-          // For active markets, show investment as negative P&L for now
-          tradePnL = -tradeValue;
+          // For active markets, don't show P&L until resolution to avoid chart tanking
+          tradePnL = 0;
         }
 
         return {
@@ -341,7 +341,7 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
   } catch (error) {
     console.error('Portfolio handler error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' }, 
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }
