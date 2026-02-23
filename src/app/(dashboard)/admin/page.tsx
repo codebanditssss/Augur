@@ -1,16 +1,17 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { 
-  Users, 
-  TrendingUp, 
-  DollarSign, 
+import {
+  Users,
+  TrendingUp,
+  DollarSign,
   Activity,
   AlertCircle,
   CheckCircle,
   XCircle,
   Clock
 } from 'lucide-react';
+import GenerateMarkets from '@/components/admin/GenerateMarkets';
 
 interface AdminMetrics {
   totalUsers: number;
@@ -33,12 +34,12 @@ interface AdminMetrics {
   }>;
 }
 
-const MetricCard = ({ 
-  title, 
-  value, 
-  change, 
-  icon: Icon, 
-  colorClass = "bg-blue-500" 
+const MetricCard = ({
+  title,
+  value,
+  change,
+  icon: Icon,
+  colorClass = "bg-blue-500"
 }: {
   title: string;
   value: string | number;
@@ -57,11 +58,10 @@ const MetricCard = ({
           <dd className="flex items-baseline">
             <div className="text-2xl font-semibold text-gray-900">{value}</div>
             {change && (
-              <div className={`ml-2 flex items-baseline text-sm font-semibold ${
-                change.startsWith('+') ? 'text-green-600' : 
-                change.startsWith('-') ? 'text-red-600' : 
-                'text-gray-500'
-              }`}>
+              <div className={`ml-2 flex items-baseline text-sm font-semibold ${change.startsWith('+') ? 'text-green-600' :
+                change.startsWith('-') ? 'text-red-600' :
+                  'text-gray-500'
+                }`}>
                 {change}
               </div>
             )}
@@ -78,7 +78,7 @@ const AlertItem = ({ alert }: { alert: AdminMetrics['recentAlerts'][0] }) => {
     warning: AlertCircle,
     error: XCircle
   };
-  
+
   const colorMap = {
     info: 'text-blue-500',
     warning: 'text-yellow-500',
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
     };
 
     fetchMetrics();
-    
+
     // Refresh metrics every 30 seconds
     const interval = setInterval(fetchMetrics, 30000);
     return () => clearInterval(interval);
@@ -185,11 +185,10 @@ export default function AdminDashboard() {
           )}
           <div>
             <h2 className="text-lg font-semibold text-gray-900">System Health</h2>
-            <p className={`text-sm ${
-              metrics.systemHealth.status === 'healthy' ? 'text-green-600' :
+            <p className={`text-sm ${metrics.systemHealth.status === 'healthy' ? 'text-green-600' :
               metrics.systemHealth.status === 'warning' ? 'text-yellow-600' :
-              'text-red-600'
-            }`}>
+                'text-red-600'
+              }`}>
               {metrics.systemHealth.message}
             </p>
           </div>
@@ -249,6 +248,11 @@ export default function AdminDashboard() {
             </p>
           )}
         </div>
+      </div>
+
+      {/* AI Market Generation Section */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <GenerateMarkets />
       </div>
 
       {/* Quick Actions */}
