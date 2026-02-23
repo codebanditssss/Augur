@@ -9,6 +9,7 @@ import ProfileDropdown from '@/components/dashboard/ProfileDropdown';
 import { ConnectionStatusCompact } from '@/components/realtime/ConnectionStatus';
 import { RealtimeProvider } from '@/contexts/RealtimeContext';
 import { AnimatedSidebar } from '@/components/dashboard/AnimatedSidebar';
+import { Toaster } from 'sonner';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -16,6 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" expand={false} richColors />
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div

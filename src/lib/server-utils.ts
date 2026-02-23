@@ -39,7 +39,7 @@ export function getServiceRoleClient() {
  */
 export async function getAuthenticatedServerClient(request?: NextRequest) {
   const cookieStore = await cookies()
-  
+
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -58,10 +58,10 @@ export async function getAuthenticatedServerClient(request?: NextRequest) {
  */
 export async function getCurrentUser(request?: NextRequest) {
   const supabase = await getAuthenticatedServerClient(request)
-  
+
   try {
     const { data: { user }, error } = await supabase.auth.getUser()
-    
+
     if (error || !user) {
       return null
     }
@@ -69,6 +69,8 @@ export async function getCurrentUser(request?: NextRequest) {
     return {
       id: user.id,
       email: user.email!,
+      // TODO: Metadata-based role is deprecated and insecure. 
+      // Use admin_users table check for sensitive operations.
       role: user.user_metadata?.role || 'user'
     }
   } catch (error) {
@@ -94,14 +96,14 @@ export function withAuthentication<
   return async (request: NextRequest, ...args: T) => {
     try {
       const user = await getCurrentUser(request)
-      
+
       if (!user) {
         return new Response(
-          JSON.stringify({ 
-            error: 'Unauthorized', 
-            message: 'Please sign in to access this resource' 
-          }), 
-          { 
+          JSON.stringify({
+            error: 'Unauthorized',
+            message: 'Please sign in to access this resource'
+          }),
+          {
             status: 401,
             headers: { 'Content-Type': 'application/json' }
           }
@@ -110,15 +112,15 @@ export function withAuthentication<
 
       const supabase = await getAuthenticatedServerClient(request)
       return handler(user, supabase, request, ...args)
-      
+
     } catch (error) {
       console.error('Authentication error:', error)
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Internal Server Error',
           message: 'Authentication failed'
-        }), 
-        { 
+        }),
+        {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
         }
@@ -141,13 +143,21 @@ export function withAdminAuthentication<
   ) => Promise<Response>
 ): (request: NextRequest, ...args: T) => Promise<Response> {
   return withAuthentication(async (user, supabase, request, ...args: T) => {
-    if (user.role !== 'admin') {
+    // 🔒 SECURE CHECK: Verify against the protected admin_users table, not metadata
+    const { data: adminCheck, error } = await supabase
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error || !adminCheck) {
+      console.warn(`Unauthorized admin access attempt by user ${user.id}`);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Forbidden',
           message: 'Admin access required'
-        }), 
-        { 
+        }),
+        {
           status: 403,
           headers: { 'Content-Type': 'application/json' }
         }
@@ -163,13 +173,13 @@ export function withAdminAuthentication<
  */
 export function validateRequestInput(data: any, requiredFields: string[]): { isValid: boolean; missingFields: string[] } {
   const missingFields: string[] = []
-  
+
   for (const field of requiredFields) {
     if (!data[field] || data[field] === null || data[field] === undefined) {
       missingFields.push(field)
     }
   }
-  
+
   return {
     isValid: missingFields.length === 0,
     missingFields
@@ -181,12 +191,12 @@ export function validateRequestInput(data: any, requiredFields: string[]): { isV
  */
 export function createErrorResponse(message: string, status: number = 400, details?: any) {
   return new Response(
-    JSON.stringify({ 
+    JSON.stringify({
       error: message,
       details,
       timestamp: new Date().toISOString()
-    }), 
-    { 
+    }),
+    {
       status,
       headers: { 'Content-Type': 'application/json' }
     }
@@ -198,8 +208,8 @@ export function createErrorResponse(message: string, status: number = 400, detai
  */
 export function createSuccessResponse(data: any, status: number = 200) {
   return new Response(
-    JSON.stringify(data), 
-    { 
+    JSON.stringify(data),
+    {
       status,
       headers: { 'Content-Type': 'application/json' }
     }

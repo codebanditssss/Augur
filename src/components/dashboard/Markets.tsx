@@ -7,10 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { useMarkets } from '@/hooks/useMarkets';
 import { OrderPlacement } from './OrderPlacement';
 import type { Market } from '@/lib/supabase';
-import { 
-  TrendingUp, 
+import {
+  TrendingUp,
   TrendingDown,
-  Users, 
+  Users,
   Clock,
   Search,
   Filter,
@@ -43,11 +43,12 @@ const getCategoryIcon = (category: string) => {
     case 'crypto': return Bitcoin;
     case 'sports': return Trophy;
     case 'politics': return Building;
-    case 'economics': return DollarSign;
+    case 'finance': return TrendingUp;
+    case 'economics': return TrendingUp;
     case 'technology': return Activity;
     case 'entertainment': return Tv;
     default: return Globe;
-}
+  }
 };
 
 export function Markets() {
@@ -60,7 +61,7 @@ export function Markets() {
   const [riskFilter, setRiskFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   const [featuredOnly, setFeaturedOnly] = useState(false);
-  
+
   // Order placement modal state
   const [showOrderModal, setShowOrderModal] = useState(false);
   // Use the minimal type for OrderPlacementProps.market
@@ -75,8 +76,8 @@ export function Markets() {
   const [selectedSide, setSelectedSide] = useState<'yes' | 'no'>('yes');
 
   // Fetch ALL markets for category counts (no filters)
-  const { 
-    markets: allMarkets, 
+  const {
+    markets: allMarkets,
   } = useMarkets({
     status: 'all',
     category: 'all',
@@ -84,11 +85,11 @@ export function Markets() {
   });
 
   // Fetch filtered markets for display
-  const { 
-    markets: apiMarkets, 
-    loading, 
-    error, 
-    refetch: refreshMarkets 
+  const {
+    markets: apiMarkets,
+    loading,
+    error,
+    refetch: refreshMarkets
   } = useMarkets({
     category: selectedCategory === 'all' ? undefined : selectedCategory,
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -121,7 +122,7 @@ export function Markets() {
     { id: 'sports', name: 'Sports', count: categoryCounts['sports'] || 0, icon: Trophy },
     { id: 'crypto', name: 'Crypto', count: categoryCounts['crypto'] || 0, icon: Bitcoin },
     { id: 'politics', name: 'Politics', count: categoryCounts['politics'] || 0, icon: Building },
-    { id: 'economics', name: 'Economics', count: categoryCounts['economics'] || 0, icon: DollarSign },
+    { id: 'economics', name: 'Economics', count: categoryCounts['economics'] || 0, icon: TrendingUp },
     { id: 'technology', name: 'Technology', count: categoryCounts['technology'] || 0, icon: Activity },
     { id: 'entertainment', name: 'Entertainment', count: categoryCounts['entertainment'] || 0, icon: Tv }
   ];
@@ -147,13 +148,13 @@ export function Markets() {
     .filter(market => {
       const matchesCategory = selectedCategory === 'all' || market.category === selectedCategory;
       const matchesSearch = market.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           market.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           market.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+        market.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        market.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesStatus = statusFilter === 'all' || market.status === statusFilter;
       const matchesRisk = riskFilter === 'all' || market.riskLevel === riskFilter;
       const matchesFeatured = !featuredOnly || market.featured;
       const matchesPrice = market.yesPrice >= priceRange[0] && market.yesPrice <= priceRange[1];
-      
+
       return matchesCategory && matchesSearch && matchesStatus && matchesRisk && matchesFeatured && matchesPrice;
     })
     .sort((a, b) => {
@@ -238,7 +239,7 @@ export function Markets() {
       label: "Active Traders",
       value: formatNumber(totalTraders),
       valueClass: "text-2xl font-bold text-gray-900",
-      subtext: "+12% this week",
+      subtext: `Total unique participants`,
       subtextClass: "text-xs text-gray-500 mt-1",
     },
     {
@@ -247,7 +248,7 @@ export function Markets() {
       label: "24h Volume",
       value: `₹${formatNumber(totalVolume)}`,
       valueClass: "text-2xl font-bold text-gray-900",
-      subtext: "+8% from yesterday",
+      subtext: "Total trade volume",
       subtextClass: "text-xs text-gray-500 mt-1",
     },
     {
@@ -280,8 +281,8 @@ export function Markets() {
                 <span className="text-sm text-gray-500">Live data</span>
               </div>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={refreshMarkets}
               className="hover:border-gray-200 shadow bg-white/70 backdrop-blur-md rounded-full px-6 py-3 min-w-[120px] min-h-[44px] flex items-center justify-center"
@@ -309,8 +310,8 @@ export function Markets() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Advanced Filters</h3>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     setStatusFilter('all');
@@ -322,7 +323,7 @@ export function Markets() {
                   Clear All
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
@@ -337,7 +338,7 @@ export function Markets() {
                     onSelect={val => setStatusFilter(val as any)}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
                   <SelectDropdown
@@ -351,7 +352,7 @@ export function Markets() {
                     onSelect={val => setRiskFilter(val as any)}
                   />
                 </div>
-                
+
                 {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Price Range (Yes)</label>
                   <div className="flex items-center gap-2">
@@ -374,7 +375,7 @@ export function Markets() {
                     />
                   </div>
                 </div> */}
-                
+
                 {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Special</label>
                   <label className="flex items-center">
@@ -400,11 +401,10 @@ export function Markets() {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  selectedCategory === category.id
+                className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${selectedCategory === category.id
                     ? 'bg-gray-900 text-white shadow-md'
                     : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 hover:shadow-sm'
-                }`}
+                  }`}
               >
                 <Icon className="h-4 w-4" />
                 {category.name}
@@ -479,58 +479,56 @@ export function Markets() {
         <Card className="border border-gray-100 overflow-hidden bg-white/95 rounded-2xl shadow-xl overflow-x-auto">
           <div className="p-3 sm:p-6">
             <div className="flex items-center justify-between mb-6">
-          {/* <div className="bg-gray-50 border-b border-gray-100 p-3 sm:p-6">
+              {/* <div className="bg-gray-50 border-b border-gray-100 p-3 sm:p-6">
             <div className="flex items-center justify-between mb-6"> */}
               <div className='flex items-center gap-4 justify-start w-full sm:w-auto mt-2 sm:mt-0 flex-wrap'>
-              <h3 className="text-xl font-semibold text-gray-900 flex-wrap">
-                {selectedCategory === 'all' ? 'All Markets' : `${categories.find(c => c.id === selectedCategory)?.name} Markets`}
-              </h3>
-              <div className="flex rounded-full bg-white p-1 ml-4">
-                {['1D', '1W', '1M', '3M', '1Y', 'ALL'].map((label, idx, arr) => {
-                  const isSelected = sortBy === label;
-                  const isLast = idx === arr.length - 1;
-                  return (
-                    <button
-                      key={label}
-                      onClick={() => setSortBy(label)}
-                      className={
-                        `flex-1 px-3 py-1 text-sm font-medium shadow-sm ` +
-                        (isSelected
-                          ? `bg-black text-white ${isLast ? 'rounded-r-full' : ''}`
-                          : `bg-transparent ${isLast ? 'rounded-r-full' : ''}`)
-                      }
-                      style={{
-                        borderTopLeftRadius: idx === 0 ? '9999px' : undefined,
-                        borderBottomLeftRadius: idx === 0 ? '9999px' : undefined,
-                        borderTopRightRadius: isLast ? '9999px' : undefined,
-                        borderBottomRightRadius: isLast ? '9999px' : undefined,
-                      }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
+                <h3 className="text-xl font-semibold text-gray-900 flex-wrap">
+                  {selectedCategory === 'all' ? 'All Markets' : `${categories.find(c => c.id === selectedCategory)?.name} Markets`}
+                </h3>
+                <div className="flex rounded-full bg-white p-1 ml-4">
+                  {['1D', '1W', '1M', '3M', '1Y', 'ALL'].map((label, idx, arr) => {
+                    const isSelected = sortBy === label;
+                    const isLast = idx === arr.length - 1;
+                    return (
+                      <button
+                        key={label}
+                        onClick={() => setSortBy(label)}
+                        className={
+                          `flex-1 px-3 py-1 text-sm font-medium shadow-sm ` +
+                          (isSelected
+                            ? `bg-black text-white ${isLast ? 'rounded-r-full' : ''}`
+                            : `bg-transparent ${isLast ? 'rounded-r-full' : ''}`)
+                        }
+                        style={{
+                          borderTopLeftRadius: idx === 0 ? '9999px' : undefined,
+                          borderBottomLeftRadius: idx === 0 ? '9999px' : undefined,
+                          borderTopRightRadius: isLast ? '9999px' : undefined,
+                          borderBottomRightRadius: isLast ? '9999px' : undefined,
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div>
-              <div className="flex items-center gap-4 justify-end w-full sm:w-auto mt-2 sm:mt-0 flex-wrap">
+                <div className="flex items-center gap-4 justify-end w-full sm:w-auto mt-2 sm:mt-0 flex-wrap">
                   <div className="text-sm text-gray-600">
                     {filteredMarkets.length} {filteredMarkets.length === 1 ? 'market' : 'markets'}
                   </div>
                   <div className="flex rounded-lg bg-gray-100 p-1">
                     <button
                       onClick={() => setViewMode('list')}
-                      className={`p-1.5 rounded transition-colors ${
-                        viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
-                      }`}
+                      className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+                        }`}
                     >
                       <BookOpen className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setViewMode('grid')}
-                      className={`p-1.5 rounded transition-colors ${
-                        viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
-                      }`}
+                      className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+                        }`}
                     >
                       <Target className="h-4 w-4" />
                     </button>
@@ -558,7 +556,7 @@ export function Markets() {
                   <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Error loading markets</h3>
                   <p className="text-gray-600 mb-4">{error}</p>
-                  <Button 
+                  <Button
                     onClick={refreshMarkets}
                     className="flex items-center gap-2"
                   >
@@ -622,15 +620,15 @@ export function Markets() {
                                           </Badge>
                                         )}
                                       </div> */}
-                                      
+
                                       <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
                                         {market.title}
                                       </h3>
-                                      
+
                                       {market.description && (
                                         <p className="text-sm text-gray-600 mb-3">{market.description}</p>
                                       )}
-                                      
+
                                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                                         <div className="flex items-center gap-1 text-gray-500">
                                           <Users className="h-3 w-3" />
@@ -656,9 +654,8 @@ export function Markets() {
                                         <div className="flex items-center gap-2 mb-1">
                                           <span className="text-sm text-gray-500">Probability:</span>
                                           <span className="text-lg font-bold text-gray-900">{market.probability}%</span>
-                                          <div className={`flex items-center text-xs ${
-                                            market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
-                                          }`}>
+                                          <div className={`flex items-center text-xs ${market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+                                            }`}>
                                             {market.priceChange >= 0 ? (
                                               <TrendingUp className="h-3 w-3 mr-1" />
                                             ) : (
@@ -668,9 +665,9 @@ export function Markets() {
                                           </div>
                                         </div>
                                       </div>
-                                      
+
                                       <div className="flex gap-2">
-                                        <Button 
+                                        <Button
                                           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium"
                                           size="sm"
                                           onClick={(e) => {
@@ -680,8 +677,8 @@ export function Markets() {
                                         >
                                           Yes ₹{market.yesPrice}
                                         </Button>
-                                        <Button 
-                                          variant="outline" 
+                                        <Button
+                                          variant="outline"
                                           className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 text-sm font-medium"
                                           size="sm"
                                           onClick={(e) => {
@@ -692,7 +689,7 @@ export function Markets() {
                                           No ₹{market.noPrice}
                                         </Button>
                                       </div>
-                                      
+
 
                                     </div>
                                   </div>
@@ -770,9 +767,8 @@ export function Markets() {
                                     <Target className="h-3 w-3" />
                                     <span>{market.probability}%</span>
                                   </div>
-                                  <div className={`flex items-center gap-1 ${
-                                    market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
-                                  }`}>
+                                  <div className={`flex items-center gap-1 ${market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+                                    }`}>
                                     {market.priceChange >= 0 ? (
                                       <TrendingUp className="h-3 w-3" />
                                     ) : (
@@ -784,7 +780,7 @@ export function Markets() {
 
                                 {/* Trading Buttons */}
                                 <div className="flex gap-2">
-                                  <Button 
+                                  <Button
                                     className="bg-blue-600 hover:bg-blue-700 text-white flex-1 text-sm"
                                     size="sm"
                                     onClick={(e) => {
@@ -794,8 +790,8 @@ export function Markets() {
                                   >
                                     Yes ₹{market.yesPrice}
                                   </Button>
-                                  <Button 
-                                    variant="outline" 
+                                  <Button
+                                    variant="outline"
                                     className="border-gray-300 text-gray-700 hover:bg-gray-50 flex-1 text-sm"
                                     size="sm"
                                     onClick={(e) => {
@@ -830,8 +826,8 @@ export function Markets() {
                       <p className="text-gray-600 mb-4">
                         Try adjusting your search or filter criteria to find more markets.
                       </p>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => {
                           setSearchTerm('');
                           setSelectedCategory('all');
@@ -852,11 +848,11 @@ export function Markets() {
 
         {/* Order Placement Modal */}
         {showOrderModal && selectedMarket && (
-          <div 
+          <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             onClick={() => setShowOrderModal(false)}
           >
-            <div 
+            <div
               className="relative"
               onClick={(e) => e.stopPropagation()}
             >

@@ -12,9 +12,9 @@ import {
   TrendingUp,
   Info,
   Loader2,
-  AlertCircle,
-  CheckCircle
+  AlertCircle
 } from "lucide-react";
+import { toast } from 'sonner';
 
 interface OrderPlacementProps {
   market: {
@@ -41,7 +41,6 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market'); // Default to market for simplicity
   const [price, setPrice] = useState(initialSide === 'yes' ? market.yesPrice : market.noPrice);
   const [quantity, setQuantity] = useState(1);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // Use the orders hook for placing orders
   const { placeOrder, placing, error: orderError } = useOrders();
@@ -108,14 +107,17 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
   const handlePlaceOrder = async () => {
     // Validation checks
     if (isMarketInactive) {
+      toast.error("Market is closed for trading.");
       return;
     }
 
     if (balance && totalCost > balance.available_balance) {
+      toast.error(`Insufficient balance. Required: ₹${totalCost.toFixed(2)}`);
       return;
     }
 
     if (!balance) {
+      toast.error("Please log in to place an order.");
       return;
     }
 
@@ -130,9 +132,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
 
       const newOrder = await placeOrder(orderData);
 
-      // Show success message
-      setShowSuccessMessage(true);
-      setTimeout(() => setShowSuccessMessage(false), 3000);
+      toast.success("Order placed successfully");
 
       // Call callbacks
       if (onOrderPlace) {
@@ -153,21 +153,12 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
 
     } catch (error) {
       console.error('Error placing order:', error);
+      toast.error("Failed to place order. Please try again.");
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg max-w-md mx-auto">
-      {/* Success Message */}
-      {showSuccessMessage && (
-        <div className="absolute top-4 left-4 right-4 z-20 bg-green-50 border border-green-200 rounded-lg p-3">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-medium text-green-800">Order placed successfully! 🎉</span>
-          </div>
-        </div>
-      )}
-
+    <div className="bg-white rounded-xl shadow-lg max-w-md mx-auto relative">
       {/* Header with Market Info */}
       <div className="p-4">
         <div className="flex items-start justify-between">
@@ -189,8 +180,8 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
             onClick={() => handleSideChange('yes')}
             disabled={!!isMarketInactive}
             className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${selectedSide === 'yes'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
               } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <div className="text-center">
@@ -202,8 +193,8 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
             onClick={() => handleSideChange('no')}
             disabled={!!isMarketInactive}
             className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${selectedSide === 'no'
-                ? 'bg-gray-900 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-gray-900 text-white shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
               } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <div className="text-center">
@@ -322,8 +313,8 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
               onClick={() => handleOrderTypeChange('market')}
               disabled={!!isMarketInactive}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${orderType === 'market'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
                 } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Market Order
@@ -332,8 +323,8 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
               onClick={() => handleOrderTypeChange('limit')}
               disabled={!!isMarketInactive}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${orderType === 'limit'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
                 } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Limit Order
@@ -347,16 +338,16 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
           </p>
         </div>
 
-        {/* Error Messages */}
+        {/* Error Messages (Now via toast where appropriate, but kept here for validation feedback) */}
         {(orderError || hasInsufficientBalance || isMarketInactive) && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-start">
               <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
               <p className="text-sm text-red-600 font-medium">
                 {isMarketInactive
-                  ? 'This market is closed for trading.'
+                  ? 'Market is closed'
                   : hasInsufficientBalance
-                    ? `Insufficient balance. Need ₹${totalCost.toFixed(2)}, have ₹${balance?.available_balance.toFixed(2) || 0}.`
+                    ? `Insufficient balance. Required: ₹${totalCost.toFixed(2)}`
                     : orderError
                 }
               </p>
@@ -369,8 +360,8 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
           onClick={handlePlaceOrder}
           disabled={placing || hasInsufficientBalance || portfolioLoading || !balance || !!isMarketInactive}
           className={`w-full py-3 text-base font-semibold rounded-lg ${selectedSide === 'yes'
-              ? 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400'
-              : 'bg-gray-900 hover:bg-gray-800 text-white disabled:bg-gray-600'
+            ? 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400'
+            : 'bg-gray-900 hover:bg-gray-800 text-white disabled:bg-gray-600'
             }`}
         >
           {placing ? (
