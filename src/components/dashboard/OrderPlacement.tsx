@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOrders } from "@/hooks/useOrders";
 import { usePortfolio } from "@/hooks/usePortfolio";
-import { 
-  Plus, 
-  Minus, 
-  TrendingUp, 
+import {
+  Plus,
+  Minus,
+  TrendingUp,
   Info,
   Loader2,
   AlertCircle,
@@ -42,10 +42,10 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
   const [price, setPrice] = useState(initialSide === 'yes' ? market.yesPrice : market.noPrice);
   const [quantity, setQuantity] = useState(1);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  
+
   // Use the orders hook for placing orders
   const { placeOrder, placing, error: orderError } = useOrders();
-  
+
   // Get user balance
   const { portfolio, loading: portfolioLoading } = usePortfolio({});
   const balance = portfolio?.balance;
@@ -59,11 +59,11 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
 
   // CORRECTED CALCULATION LOGIC:
   // Backend expects: price = what user sees and pays
-  // For YES: user pays {price}¢ per share  
-  // For NO: user pays {price}¢ per share (which is 100 - yesPrice)
+  // For YES: user pays {price} per share (out of 100)
+  // For NO: user pays {price} per share (which is 100 - yesPrice)
   const userPayPrice = price; // User pays exactly what they see
   const totalCost = (userPayPrice * quantity) / 100;
-  
+
   // If user wins: they get ₹1 per share
   // Profit = ₹1 - what they paid = ₹1 - (userPayPrice/100)
   const profitPerShare = 1 - (userPayPrice / 100);
@@ -73,7 +73,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
 
   // Check if user has sufficient balance
   const hasInsufficientBalance = !!(balance && totalCost > balance.available_balance);
-  
+
   // Check if market is active
   const isMarketInactive = !!(market.status && !['active', 'open'].includes(market.status.toLowerCase()));
 
@@ -188,29 +188,27 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
           <button
             onClick={() => handleSideChange('yes')}
             disabled={!!isMarketInactive}
-            className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${
-              selectedSide === 'yes'
+            className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${selectedSide === 'yes'
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
-            } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <div className="text-center">
               <div className="font-semibold">Yes</div>
-              <div className="text-xs opacity-90">{market.yesPrice.toFixed(1)}¢</div>
+              <div className="text-xs opacity-90">₹{market.yesPrice.toFixed(1)}</div>
             </div>
           </button>
           <button
             onClick={() => handleSideChange('no')}
             disabled={!!isMarketInactive}
-            className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${
-              selectedSide === 'no'
+            className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${selectedSide === 'no'
                 ? 'bg-gray-900 text-white shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
-            } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <div className="text-center">
               <div className="font-semibold">No</div>
-              <div className="text-xs opacity-90">{market.noPrice.toFixed(1)}¢</div>
+              <div className="text-xs opacity-90">₹{market.noPrice.toFixed(1)}</div>
             </div>
           </button>
         </div>
@@ -225,12 +223,12 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
               {orderType === 'market' ? 'Market Price' : 'Custom Price'}
             </div>
           </div>
-          
+
           {orderType === 'market' ? (
             // Market order - show fixed price
             <div className="flex items-center justify-center border border-gray-300 rounded-lg bg-gray-50 py-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{price.toFixed(1)}¢</div>
+                <div className="text-2xl font-bold text-gray-900">₹{price.toFixed(1)}</div>
                 <div className="text-xs text-gray-500 mt-1">Current market price</div>
               </div>
             </div>
@@ -245,7 +243,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
                 <Minus className="h-4 w-4 text-gray-600" />
               </button>
               <div className="flex-1 text-center py-3 px-4 bg-white">
-                <span className="text-lg font-semibold text-gray-900">{price.toFixed(1)}¢</span>
+                <span className="text-lg font-semibold text-gray-900">₹{price.toFixed(1)}</span>
               </div>
               <button
                 onClick={() => handlePriceChange(price + 0.1)}
@@ -256,7 +254,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
               </button>
             </div>
           )}
-          
+
           <div className="flex justify-between text-xs text-gray-500 mt-2">
             <span>Available: {market.availableQuantity || 0}</span>
             {balance && <span>Balance: ₹{balance.available_balance.toFixed(2)}</span>}
@@ -306,7 +304,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
               <p className="text-xs text-gray-500">Profit</p>
             </div>
           </div>
-          
+
           {totalProfit > 0 && (
             <div className="flex items-center justify-center text-sm border-t border-gray-200 pt-3">
               <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
@@ -323,29 +321,27 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
             <button
               onClick={() => handleOrderTypeChange('market')}
               disabled={!!isMarketInactive}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                orderType === 'market'
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${orderType === 'market'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Market Order
             </button>
             <button
               onClick={() => handleOrderTypeChange('limit')}
               disabled={!!isMarketInactive}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                orderType === 'limit'
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${orderType === 'limit'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
-              } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                } ${isMarketInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Limit Order
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            {orderType === 'market' 
-              ? 'Execute immediately at current market price' 
+            {orderType === 'market'
+              ? 'Execute immediately at current market price'
               : 'Set your own price and wait for a match'
             }
           </p>
@@ -357,9 +353,9 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
             <div className="flex items-start">
               <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
               <p className="text-sm text-red-600 font-medium">
-                {isMarketInactive 
+                {isMarketInactive
                   ? 'This market is closed for trading.'
-                  : hasInsufficientBalance 
+                  : hasInsufficientBalance
                     ? `Insufficient balance. Need ₹${totalCost.toFixed(2)}, have ₹${balance?.available_balance.toFixed(2) || 0}.`
                     : orderError
                 }
@@ -372,11 +368,10 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
         <Button
           onClick={handlePlaceOrder}
           disabled={placing || hasInsufficientBalance || portfolioLoading || !balance || !!isMarketInactive}
-          className={`w-full py-3 text-base font-semibold rounded-lg ${
-            selectedSide === 'yes'
+          className={`w-full py-3 text-base font-semibold rounded-lg ${selectedSide === 'yes'
               ? 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400'
               : 'bg-gray-900 hover:bg-gray-800 text-white disabled:bg-gray-600'
-          }`}
+            }`}
         >
           {placing ? (
             <>
