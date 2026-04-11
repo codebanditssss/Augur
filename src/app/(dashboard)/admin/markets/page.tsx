@@ -15,8 +15,11 @@ import {
   Users,
   DollarSign,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles,
+  Info
 } from 'lucide-react';
+import { ResolutionSuggestion } from '@/lib/openai';
 import { toast } from 'sonner';
 
 interface AdminMarket {
@@ -187,6 +190,8 @@ export default function AdminMarkets() {
   const [resolvingMarket, setResolvingMarket] = useState<AdminMarket | null>(null);
   const [resolutionOutcome, setResolutionOutcome] = useState<'YES' | 'NO' | 'CANCEL'>('YES');
   const [isSubmittingResolution, setIsSubmittingResolution] = useState(false);
+  const [isGettingAISuggestion, setIsGettingAISuggestion] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<ResolutionSuggestion | null>(null);
   const marketsPerPage = 12;
 
   const fetchMarkets = async () => {
@@ -256,6 +261,35 @@ export default function AdminMarkets() {
       fetchMarkets();
     } catch (err) {
       console.error('Action failed:', err);
+    }
+  };
+
+  const handleAISuggestion = async () => {
+    if (!resolvingMarket) return;
+
+    setIsGettingAISuggestion(true);
+    setAiSuggestion(null);
+
+    try {
+      const response = await fetch('/api/admin/markets/resolve-suggestion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marketId: resolvingMarket.id })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get suggestion');
+      }
+
+      const data = await response.json();
+      setAiSuggestion(data.suggestion);
+      setResolutionOutcome(data.suggestion.outcome);
+      toast.success('AI Suggestion received!');
+    } catch (err) {
+      console.error('AI Suggestion failed:', err);
+      toast.error('Could not get AI suggestion. Try manual resolution.');
+    } finally {
+      setIsGettingAISuggestion(false);
     }
   };
 
@@ -429,15 +463,40 @@ export default function AdminMarkets() {
             </p>
 
             <div className="space-y-3 mb-8">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select Outcome</span>
+                <button
+                  onClick={handleAISuggestion}
+                  disabled={isGettingAISuggestion}
+                  className="flex items-center text-xs font-bold text-purple-600 hover:text-purple-700 disabled:opacity-50"
+                >
+                  <Sparkles className={`h-3 w-3 mr-1 ${isGettingAISuggestion ? 'animate-spin' : ''}`} />
+                  {isGettingAISuggestion ? 'Analyzing News...' : 'Ask AI to Resolve'}
+                </button>
+              </div>
+
+              {aiSuggestion && (
+                <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 mb-4 text-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-start gap-2 text-purple-800 font-medium mb-1">
+                    <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>AI Reasoning (Confidence: {Math.round(aiSuggestion.confidence * 100)}%)</span>
+                  </div>
+                  <p className="text-purple-700/80 italic line-clamp-3">"{aiSuggestion.reasoning}"</p>
+                </div>
+              )}
+
               {(['YES', 'NO', 'CANCEL'] as const).map((outcome) => (
                 <button
                   key={outcome}
-                  onClick={() => setResolutionOutcome(outcome)}
+                  onClick={() => {
+                    setResolutionOutcome(outcome);
+                    setAiSuggestion(null); // Clear suggestion if manual change
+                  }}
                   className={`w-full py-4 px-6 rounded-xl border-2 transition-all font-bold text-lg flex items-center justify-between ${resolutionOutcome === outcome
-                      ? outcome === 'YES' ? 'border-green-500 bg-green-50 text-green-700' :
-                        outcome === 'NO' ? 'border-red-500 bg-red-50 text-red-700' :
-                          'border-gray-500 bg-gray-50 text-gray-700'
-                      : 'border-gray-100 hover:border-gray-300 text-gray-600'
+                    ? outcome === 'YES' ? 'border-green-500 bg-green-50 text-green-700' :
+                      outcome === 'NO' ? 'border-red-500 bg-red-50 text-red-700' :
+                        'border-gray-500 bg-gray-50 text-gray-700'
+                    : 'border-gray-100 hover:border-gray-300 text-gray-600'
                     }`}
                 >
                   {outcome}
@@ -451,6 +510,7 @@ export default function AdminMarkets() {
                 onClick={() => {
                   setShowResolveModal(false);
                   setResolvingMarket(null);
+                  setAiSuggestion(null);
                 }}
                 disabled={isSubmittingResolution}
                 className="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"

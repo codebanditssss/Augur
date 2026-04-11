@@ -25,7 +25,7 @@ export async function generateMarketsFromNews(headlines: string[]): Promise<Gene
 
     const prompt = `
     Today is ${today}.
-    You are a prediction market creator for an Indian platform called "YesNoMaybe".
+    You are a prediction market creator for an Indian platform called "augur".
     Given these recent news headlines, generate 5 highly interesting and tradable YES/NO prediction market questions.
     
     Rules for Generation:
@@ -74,5 +74,67 @@ export async function generateMarketsFromNews(headlines: string[]): Promise<Gene
     } catch (error: any) {
         console.error('Error generating markets with OpenAI:', error.message, error.stack);
         return [];
+    }
+}
+
+export interface ResolutionSuggestion {
+    outcome: 'YES' | 'NO' | 'CANCEL';
+    reasoning: string;
+    confidence: number;
+    source_links: string[];
+}
+
+export async function suggestMarketResolution(
+    marketTitle: string,
+    criteria: string,
+    news: string[]
+): Promise<ResolutionSuggestion | null> {
+    const today = new Date().toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+    });
+
+    const prompt = `
+    Today is ${today}.
+    You are a market resolution assistant for "augur".
+    Your job is to determine if a prediction market question has been settled.
+
+    MARKET: "${marketTitle}"
+    RESOLUTION CRITERIA: "${criteria}"
+
+    RECENT NEWS RELATING TO THIS TOPIC:
+    ${news.join('\n')}
+
+    Rules:
+    1. Only suggest YES or NO if the news provides definitive proof based on the criteria.
+    2. If the news is inconclusive or the event hasn't happened yet, suggest CANCEL with reasoning "Event not yet final".
+    3. Provide clear reasoning and list the news headlines you used.
+    4. Provide a confidence score (0.0 to 1.0).
+
+    Return your response as a JSON object with this exact shape:
+    {
+        "outcome": "YES", "NO", or "CANCEL",
+        "reasoning": "string",
+        "confidence": 0.0 - 1.0,
+        "source_links": ["string"]
+    }
+  `;
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                { role: "system", content: "You are a neutral fact-checker. You always return JSON." },
+                { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" }
+        });
+
+        const content = response.choices[0].message.content;
+        return content ? JSON.parse(content) : null;
+    } catch (error) {
+        console.error('Error getting resolution suggestion:', error);
+        return null;
     }
 }

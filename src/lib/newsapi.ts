@@ -63,6 +63,32 @@ export async function fetchNewsHeadlines(category: string = 'general'): Promise<
     }
 }
 
+export async function searchNews(query: string): Promise<NewsArticle[]> {
+    const apiKey = process.env.NEWS_API_KEY;
+    if (!apiKey) return [];
+
+    try {
+        // Search for specific keywords from the market title
+        const url = `${NEWS_API_BASE_URL}/everything?q=${encodeURIComponent(query)}&sortBy=relevancy&pageSize=5&apiKey=${apiKey}`;
+        const response = await fetch(url);
+
+        if (!response.ok) return [];
+
+        const data = await response.json();
+        return (data.articles || []).map((article: any) => ({
+            title: article.title,
+            description: article.description || article.content || '',
+            url: article.url,
+            source: article.source?.name || 'Unknown',
+            publishedAt: article.publishedAt,
+            category: 'search'
+        }));
+    } catch (error) {
+        console.error('Error searching news:', error);
+        return [];
+    }
+}
+
 export async function fetchAllMarketNews(): Promise<NewsArticle[]> {
     const categories = ['business', 'sports', 'technology', 'entertainment'];
 
