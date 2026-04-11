@@ -144,8 +144,8 @@ The system was developed using modern web technologies:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/codebanditssss/YesNoMaybe.git
-   cd yesnomaybe
+   git clone https://github.com/codebanditssss/augur.git
+   cd augur
    ```
 
 2. **Install dependencies**

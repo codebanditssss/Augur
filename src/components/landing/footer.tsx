@@ -3,8 +3,8 @@ import React from 'react';
 
 const faqData = [
   {
-    question: 'What is YesNoMaybe?',
-    answer: 'YesNoMaybe is a prediction market platform where you can trade on real-world events.'
+    question: 'What is augur?',
+    answer: 'augur is a prediction market platform where you can trade on real-world events.'
   },
   {
     question: 'How do I get started?',
@@ -47,10 +47,10 @@ export function Footers() {
       <footer className="w-full max-w-5xl mx-auto mt-8 mb-4">
         <div className="bg-white/80 rounded-2xl shadow-lg p-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="YesNoMaybe Logo" className="h-8 w-8" />
-            <span className="font-semibold text-lg text-gray-900">YesNoMaybe</span>
+            <img src="/logo.svg" alt="augur Logo" className="h-8 w-8" />
+            <span className="font-semibold text-lg text-gray-900">augur</span>
           </div>
-          <div className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} YesNoMaybe. All rights reserved.</div>
+          <div className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} augur. All rights reserved.</div>
           <div className="flex gap-5">
             <a href="#" className="relative transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-black after:transition-all after:duration-300 hover:after:w-full">Privacy Policy</a>
             <a href="#" className="relative transition-colors after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-black after:transition-all after:duration-300 hover:after:w-full">Terms</a>
